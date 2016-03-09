@@ -44,5 +44,4 @@ RUN npm install
 
 WORKDIR /loomio
 RUN bundle install
-
-# run angular bookstrap stuff
+CMD bundle exec rails s -p 3000 -b '0.0.0.0'
