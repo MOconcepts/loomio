@@ -27,6 +27,7 @@ RUN npm install
 WORKDIR /loomio
 RUN bundle install
 
+# compile the assets with trickery
 ENV RAILS_ENV production
 ENV DATABASE_URL sqlite3:assets_throwaway.db
 ENV DEVISE_SECRET boopboop
