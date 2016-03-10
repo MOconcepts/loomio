@@ -4,7 +4,7 @@ class Admin::BaseController < ApplicationController
 
   def url_info
 
-    h = {canonical_host: ENV['CANONICAL_HOST'], tld_length: ENV['TLD_LENGTH'], default_subdomain: ENV['DEFAULT_SUBDOMAIN']}
+    h = {canonical_host: ENV['CANONICAL_HOST'], tld_length: Loomio::TLD_LENGTH, default_subdomain: ENV['DEFAULT_SUBDOMAIN']}
 
     %w[subdomain domain host port ssl?].each do |method|
       h[method] = request.send method
