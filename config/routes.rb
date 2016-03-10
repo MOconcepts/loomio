@@ -419,6 +419,9 @@ Loomio::Application.routes.draw do
   # this is a dumb thing
   get '/groups', to: 'dashboard#show'
 
+  post '/email_processor' => 'griddler/emails#create', format: :json
+  get "/email_processor", to: proc { [200, {}, ["OK"]] }, as: "head_test_request"
+
   constraints(MainDomainConstraint) do
     scope controller: 'pages' do
       get :about
@@ -474,10 +477,12 @@ Loomio::Application.routes.draw do
   get '/timeline'   => redirect('http://www.tiki-toki.com/timeline/entry/313361/Loomio')
   get '/robots'     => 'robots#show'
 
-  get 'apps/registered'           => 'base#boot_angular_ui'
-  get 'apps/authorized'           => 'base#boot_angular_ui'
-  get 'apps/registered/:id'       => 'base#boot_angular_ui'
-  get 'apps/registered/:id/:slug' => 'base#boot_angular_ui'
-  get 'd/:key/proposal/:proposal' => 'base#boot_angular_ui'
-  get 'd/:key/comment/:comment'   => 'base#boot_angular_ui'
+  get 'apps/registered'                    => 'base#boot_angular_ui'
+  get 'apps/authorized'                    => 'base#boot_angular_ui'
+  get 'apps/registered/:id'                => 'base#boot_angular_ui'
+  get 'apps/registered/:id/:slug'          => 'base#boot_angular_ui'
+  get 'd/:key/proposal/:proposal'          => 'base#boot_angular_ui'
+  get 'd/:key/comment/:comment'            => 'base#boot_angular_ui'
+  get 'd/:key/proposal/:proposal/:outcome' => 'base#boot_angular_ui'
+  get 'g/:key/memberships/:username'       => 'base#boot_angular_ui'
 end
