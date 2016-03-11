@@ -35,4 +35,4 @@ ENV SECRET_COOKIE_TOKEN beepbeep
 
 RUN bundle exec rake assets:precompile
 
-CMD bundle exec rails s -p 3000 -b '0.0.0.0'
+CMD source /config/env && bundle exec rails s -p 3000 -b '0.0.0.0'
