@@ -27,12 +27,16 @@ RUN npm install
 WORKDIR /loomio
 RUN bundle install
 
-# compile the assets with trickery
+# set environment to production
 ENV RAILS_ENV production
+
+# fake config for building assets
 ENV DATABASE_URL sqlite3:assets_throwaway.db
 ENV DEVISE_SECRET boopboop
 ENV SECRET_COOKIE_TOKEN beepbeep
 
+# build assets
 RUN bundle exec rake assets:precompile
 
-CMD source /config/env && bundle exec rails s -p 3000 -b '0.0.0.0'
+# source the config file and run puma when the container starts
+CMD source /config/env && bundle exec puma -C config/puma.rb
