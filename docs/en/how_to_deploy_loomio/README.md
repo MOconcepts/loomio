@@ -26,7 +26,7 @@ Now you have your server's IP address, add a DNS record for your server with you
 To login to the server, open a terminal window and type:
 
 ```
-$ ssh root@loomio.dinotech.co.nz
+ssh root@loomio.dinotech.co.nz
 ```
 
 It'll look like this:
