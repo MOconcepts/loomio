@@ -9,8 +9,7 @@ angular.module('loomioApp').directive 'threadPreview', ->
 
     $scope.changeVolume = (volume) ->
       $scope.previousVolume = $scope.thread.volume()
-      $scope.thread.discussionReaderVolume = volume
-      $scope.thread.changeVolume().then ->
+      $scope.thread.saveVolume(volume).then ->
         FlashService.success "discussion.volume.#{volume}_message",
           name: $scope.thread.title
         , 'undo', $scope.undo

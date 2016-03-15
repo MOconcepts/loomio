@@ -27,6 +27,24 @@ describe API::MembershipsController do
     sign_in user
   end
 
+  describe 'update', focus: true do
+    describe 'update volume' do
+      it 'updates discussion reader volume' do
+        discussion = FactoryGirl.create(:discussion, group: group)
+        membership = group.membership_for(user)
+        membership.set_volume! 'quiet'
+        reader = DiscussionReader.for(discussion: discussion, user: user)
+        reader.save!
+        reader.set_volume! 'normal'
+        put :update, id: membership.id, membership: { volume: 'loud'}
+        reader.reload
+        membership.reload
+        expect(membership.volume).to eq 'loud'
+        expect(reader.volume).to eq 'loud'
+      end
+    end
+  end
+
   describe 'add_to_subgroup' do
     context 'permitted' do
       let(:parent_member) { FactoryGirl.create(:user) }

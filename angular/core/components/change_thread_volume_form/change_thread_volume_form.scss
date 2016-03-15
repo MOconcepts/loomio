@@ -26,3 +26,12 @@
 .change-volume-form__submit{
   @include lmoBtnSubmit;
 }
+
+.change_volume_form__all-threads-label {
+  font-weight: normal;
+  margin-left: 10px;
+}
+
+.change-volume-form__help {
+  margin-right: 20px;
+}

@@ -26,3 +26,8 @@
 .change-volume-form__submit{
   @include lmoBtnSubmit;
 }
+
+.change_volume_form__all-groups-label {
+  font-weight: normal;
+  margin-left: 10px;
+}

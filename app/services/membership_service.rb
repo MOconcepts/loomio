@@ -3,6 +3,7 @@ class MembershipService
   def self.update(membership:, params:, actor:)
     actor.ability.authorize! :update, membership
     membership.set_volume! params[:volume]
+    membership.discussion_readers.update_all(volume: nil)
   end
 
   def self.make_admin(membership:, actor:)

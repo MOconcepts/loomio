@@ -20,8 +20,10 @@ angular.module('loomioApp').factory 'MembershipModel', (BaseModel, AppConfig) ->
     groupName: ->
       @group().name
 
-    changeVolume: (volume) ->
+    saveVolume: (volume) ->
       @volume = volume
+      _.each @group().discussions(), (discussion) ->
+        discussion.discussionReaderVolume = null 
       @save()
 
     isMuted: ->

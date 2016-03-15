@@ -117,7 +117,8 @@ angular.module('loomioApp').factory 'DiscussionModel', (DraftableModel, AppConfi
     volume: ->
       @discussionReaderVolume or @membershipVolume()
 
-    changeVolume: =>
+    saveVolume: (volume) =>
+      @discussionReaderVolume = volume if volume?
       @remote.patchMember @keyOrId(), 'set_volume', { volume: @discussionReaderVolume }
 
     isMuted: ->

@@ -58,6 +58,13 @@ class Membership < ActiveRecord::Base
     return user_name ? user_name : user_email
   end
 
+  def discussion_readers
+    DiscussionReader.
+      joins(:discussion).
+      where('discussions.group_id = ?', group_id).
+      where('discussion_readers.user_id = ?', user_id)
+  end
+
   private
   def leave_subgroups_of_hidden_parents
     return if group.nil? #necessary if group is missing (as in case of production data)
