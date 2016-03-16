@@ -48,7 +48,7 @@ class PermittedParams < Struct.new(:params)
   end
 
   def membership_attributes
-    [:volume]
+    [:volume, :volume_value, :apply_to_all]
   end
 
   def discussion_reader_attributes

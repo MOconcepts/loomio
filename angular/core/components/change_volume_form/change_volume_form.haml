@@ -3,17 +3,17 @@
   %form{ng-submit: "submit()"}
     .modal-header
       %modal_header_cancel_button
-      %h1.lmo-h1{translate: "thread_volume_form.header", translate-value-title: "{{thread.title}}"}
+      %h1.lmo-h1{translate: "change_volume_form.header", translate-value-title: "{{title}}"}
     .modal-body
       %ul.change-volume-form__list
         %li.change-volume-form__option{ng-repeat: "level in volumeLevels"}
           %input.change-volume-form__input{id: "volume-{{level}}", type: "radio", ng-model: "buh.volume", name: "volume", value: "{{level}}"}
           %label.change-volume-form__label{for: "volume-{{level}}"}
-            %strong{translate: "thread_volume_form.{{level}}_label"}
-            %p.change-volume-form__description{translate: "thread_volume_form.{{level}}_description"}
-      %input.change_volume_form__all-threads#apply-to-all-threads{type: "checkbox", ng-model: "applyToAllThreads"}
-      %label.change_volume_form__all-threads-label{for: "apply-to-all-threads", translate: "thread_volume_form.apply_to_all_threads"}
+            %strong{translate: "change_volume_form.{{level}}_label"}
+            %p.change-volume-form__description{translate: "{{translateKey}}.{{level}}_description"}
+      %input.change_volume_form__apply-to-all#apply-to-all{type: "checkbox", ng-model: "applyToAll"}
+      %label.change_volume_form__apply-to-all-label{for: "apply-to-all", translate: "{{translateKey}}.apply_to_all"}
     .modal-footer
-      %a.change-volume-form__help{href: "https://loomio.gitbooks.io/manual/content/en/keeping_up_to_date.html", translate: "thread_volume_form.help", target: "_blank"}
+      %a.change-volume-form__help{href: "https://loomio.gitbooks.io/manual/content/en/keeping_up_to_date.html", translate: "common.help", target: "_blank"}
       %button.change-volume-form__submit{type: "submit", ng-disabled: "isDisabled", translate: "common.action.update"}
       %button.change-volume-form__cancel{type: "button", translate: "common.action.cancel", ng-click: "$close()"}

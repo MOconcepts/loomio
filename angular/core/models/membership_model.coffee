@@ -4,7 +4,7 @@ angular.module('loomioApp').factory 'MembershipModel', (BaseModel, AppConfig) ->
     @plural: 'memberships'
     @indices: ['id', 'userId', 'groupId']
     @searchableFields: ['userName', 'userUsername']
-    @serializableAttributes: AppConfig.permittedParams.membership
+    @serializableAttributes: ['volume_value', 'apply_to_all']
 
     relationships: ->
       @belongsTo 'group'
@@ -20,11 +20,23 @@ angular.module('loomioApp').factory 'MembershipModel', (BaseModel, AppConfig) ->
     groupName: ->
       @group().name
 
-    saveVolume: (volume) ->
-      @volume = volume
-      _.each @group().discussions(), (discussion) ->
-        discussion.discussionReaderVolume = null 
-      @save()
+    volume: ->
+      @volumeValue
+
+    saveVolume: (volume, applyToAll = false) ->
+      @volumeValue = volume
+      @applyToAll = applyToAll
+      @save().then =>
+        if @applyToAll
+          _.each @user().groups(), (group) ->
+            _.each group.discussions(), (discussion) ->
+              discussion.discussionReaderVolume = null
+          _.each @user().memberships(), (membership) ->
+            membership.volumeValue = volume
+        else
+          _.each @group().discussions(), (discussion) ->
+            discussion.discussionReaderVolume = null
+
 
     isMuted: ->
-      @volume == 'mute'
+      @volumeValue == 'mute'
