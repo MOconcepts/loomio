@@ -27,20 +27,46 @@ describe API::MembershipsController do
     sign_in user
   end
 
-  describe 'update', focus: true do
+  describe 'update' do
     describe 'update volume' do
-      it 'updates discussion reader volume' do
-        discussion = FactoryGirl.create(:discussion, group: group)
-        membership = group.membership_for(user)
-        membership.set_volume! 'quiet'
-        reader = DiscussionReader.for(discussion: discussion, user: user)
-        reader.save!
-        reader.set_volume! 'normal'
-        put :update, id: membership.id, membership: { volume: 'loud'}
-        reader.reload
-        membership.reload
-        expect(membership.volume).to eq 'loud'
-        expect(reader.volume).to eq 'loud'
+      before do
+        @discussion = FactoryGirl.create(:discussion, group: group)
+        @another_discussion = FactoryGirl.create(:discussion, group: group)
+        @membership = group.membership_for(user)
+        @membership.set_volume! 'quiet'
+        @second_membership = another_group.membership_for(user)
+        @second_membership.set_volume! 'quiet'
+        @reader = DiscussionReader.for(discussion: @discussion, user: user)
+        @reader.save!
+        @reader.set_volume! 'normal'
+        @second_reader = DiscussionReader.for(discussion: @another_discussion, user: user)
+        @second_reader.save!
+        @second_reader.set_volume! 'normal'
+      end
+      it 'updates the discussion readers' do
+        put :update, id: @membership.id, membership: { volume_value: 'loud' }
+        @reader.reload
+        @second_reader.reload
+        expect(@reader.volume).to eq 'loud'
+        expect(@second_reader.volume).to eq 'loud'
+      end
+      context 'when apply to all is true' do
+        it 'updates the volume for multiple memberships' do
+          put :update, id: @membership.id, membership: { volume_value: 'loud', apply_to_all: true }
+          @membership.reload
+          @second_membership.reload
+          expect(@membership.volume).to eq 'loud'
+          expect(@second_membership.volume).to eq 'loud'
+        end
+      end
+      context 'when apply to all is false' do
+        it 'updates the volume for a single membership' do
+          put :update, id: @membership.id, membership: { volume_value: 'loud', apply_to_all: false }
+          @membership.reload
+          @second_membership.reload
+          expect(@membership.volume).to eq 'loud'
+          expect(@second_membership.volume).not_to eq 'loud'
+        end
       end
     end
   end
