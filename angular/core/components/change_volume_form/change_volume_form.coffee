@@ -1,18 +1,28 @@
 angular.module('loomioApp').factory 'ChangeVolumeForm', ->
   templateUrl: 'generated/components/change_volume_form/change_volume_form.html'
-  controller: ($scope, model, FormService, CurrentUser, FlashService) ->
+  controller: ($scope, model, setDefault, FormService, CurrentUser, FlashService) ->
     $scope.model = model.clone()
     $scope.volumeLevels = ["loud", "normal", "quiet"]
     $scope.buh = {}
     $scope.buh.volume = model.volume()
+    $scope.setDefault = setDefault if setDefault
 
-    $scope.translateKey = "change_volume_form.#{$scope.model.constructor.singular}"
-    $scope.title = model.title or model.name
+    $scope.translateKey =
+      if setDefault
+        "change_volume_form.set_membership_default"
+      else
+        "change_volume_form.#{$scope.model.constructor.singular}"
+
+    $scope.title =
+      if setDefault
+        ''
+      else
+        model.title or model.groupName()
 
 
     $scope.submit = ->
       $scope.isDisabled = true
-      model.saveVolume($scope.buh.volume, $scope.applyToAll).then ->
+      model.saveVolume($scope.buh.volume, $scope.applyToAll, $scope.setDefault).then ->
         $scope.$close()
         translation =
           if $scope.applyToAll

@@ -4,7 +4,7 @@ angular.module('loomioApp').factory 'MembershipModel', (BaseModel, AppConfig) ->
     @plural: 'memberships'
     @indices: ['id', 'userId', 'groupId']
     @searchableFields: ['userName', 'userUsername']
-    @serializableAttributes: ['volume_value', 'apply_to_all']
+    @serializableAttributes: ['volume_value', 'apply_to_all', 'set_default']
 
     relationships: ->
       @belongsTo 'group'
@@ -23,9 +23,10 @@ angular.module('loomioApp').factory 'MembershipModel', (BaseModel, AppConfig) ->
     volume: ->
       @volumeValue
 
-    saveVolume: (volume, applyToAll = false) ->
+    saveVolume: (volume, applyToAll = false, setDefault = false) ->
       @volumeValue = volume
       @applyToAll = applyToAll
+      @setDefault = setDefault
       @save().then =>
         if @applyToAll
           _.each @user().groups(), (group) ->

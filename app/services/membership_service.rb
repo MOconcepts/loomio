@@ -2,6 +2,9 @@ class MembershipService
 
   def self.update(membership:, params:, actor:)
     actor.ability.authorize! :update, membership
+    if params[:set_default]
+      actor.update_attribute(:default_membership_volume, Membership.volumes[params[:volume_value]])
+    end
     if params[:apply_to_all]
       actor.memberships.update_all(volume: Membership.volumes[params[:volume_value]])
       actor.discussion_readers.update_all(volume: nil)

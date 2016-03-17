@@ -98,7 +98,9 @@ angular.module('loomioApp').controller 'ThreadPageController', ($scope, $routePa
     AbilityService.canStartProposal(@discussion)
 
   @openChangeVolumeForm = ->
-    ModalService.open ChangeVolumeForm, model: => @discussion
+    ModalService.open ChangeVolumeForm,
+      model: => @discussion,
+      setDefault: => false
 
   @canChangeVolume = ->
     CurrentUser.isMemberOf(@discussion.group())

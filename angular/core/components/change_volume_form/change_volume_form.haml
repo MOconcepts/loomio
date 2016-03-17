@@ -3,7 +3,8 @@
   %form{ng-submit: "submit()"}
     .modal-header
       %modal_header_cancel_button
-      %h1.lmo-h1{translate: "change_volume_form.header", translate-value-title: "{{title}}"}
+      %h1.lmo-h1{ng-if: "!setDefault", translate: "change_volume_form.header", translate-value-title: "{{title}}"}
+      %h1.lmo-h1{ng-if: "setDefault", translate: "change_volume_form.set_membership_default.header"}
     .modal-body
       %ul.change-volume-form__list
         %li.change-volume-form__option{ng-repeat: "level in volumeLevels"}

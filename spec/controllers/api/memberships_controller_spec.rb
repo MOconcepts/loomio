@@ -27,6 +27,15 @@ describe API::MembershipsController do
     sign_in user
   end
 
+  describe 'create' do
+    it 'sets the membership volume' do
+      new_group = FactoryGirl.create(:group)
+      user.update_attribute(:default_membership_volume, 'quiet')
+      membership = Membership.create!(user: user, group: new_group)
+      expect(membership.volume).to eq 'quiet'
+    end
+  end
+
   describe 'update' do
     describe 'update volume' do
       before do
@@ -66,6 +75,13 @@ describe API::MembershipsController do
           @second_membership.reload
           expect(@membership.volume).to eq 'loud'
           expect(@second_membership.volume).not_to eq 'loud'
+        end
+      end
+      context 'when set default is true', focus: true do
+        it 'sets default membership volume on user' do
+          put :update, id: @membership.id, membership: { volume_value: 'normal', set_default: true }
+          user.reload
+          expect(user.default_membership_volume).to eq 'normal'
         end
       end
     end
