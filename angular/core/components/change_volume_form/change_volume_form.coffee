@@ -25,7 +25,9 @@ angular.module('loomioApp').factory 'ChangeVolumeForm', ->
       model.saveVolume($scope.buh.volume, $scope.applyToAll, $scope.setDefault).then ->
         $scope.$close()
         translation =
-          if $scope.applyToAll
+          if $scope.setDefault
+            "change_volume_form.set_membership_default.messages.#{$scope.buh.volume}"
+          else if $scope.applyToAll
             if $scope.model.constructor.singular == 'discussion'
               "change_volume_form.membership.messages.#{$scope.buh.volume}"
             else
