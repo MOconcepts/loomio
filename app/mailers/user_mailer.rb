@@ -1,53 +1,110 @@
 class UserMailer < BaseMailer
-  helper :email
-  helper :motions
-  helper :application
+  layout 'invite_people_mailer', only: [:membership_request_approved, :contact_request, :user_added_to_group, :login, :start_decision, :accounts_merged, :user_reactivated, :group_export_ready]
 
-  def missed_yesterday(user, time_since = nil)
+  def accounts_merged(user)
+    @user = user
+    @token = user.login_tokens.create!
+    send_single_mail to: @user.email,
+                     subject_key: "user_mailer.accounts_merged.subject",
+                     subject_params: { site_name: AppConfig.theme[:site_name] },
+                     locale: @user.locale
+  end
+
+  def catch_up(user, time_since = nil, frequency = 'daily')
+    return unless user.email_catch_up
     @recipient = @user = user
     @time_start = time_since || 24.hours.ago
     @time_finish = Time.zone.now
     @time_frame = @time_start...@time_finish
 
-    @discussions = Queries::VisibleDiscussions.new(user: user,
-                                                   groups: user.inbox_groups).
-                                                   not_muted.
-                                                   unread.
-                                                   last_activity_after(@time_start)
+    @discussions = Queries::VisibleDiscussions.new(user: user)
+                    .not_muted
+                    .unread
+                    .last_activity_after(@time_start)
+    @groups = @user.groups.order(full_name: :asc)
 
-    @reader_cache = DiscussionReaderCache.new(user: @user, discussions: @discussions)
+    @reader_cache = Caches::DiscussionReader.new(user: @user, parents: @discussions)
 
-    unless @discussions.empty? or @user.inbox_groups.empty?
+    @subject_key = "email.catch_up.#{frequency}_subject"
+    @subject_params = { site_name: AppConfig.theme[:site_name] }
+
+    unless @discussions.empty? or @user.groups.empty?
       @discussions_by_group = @discussions.group_by(&:group)
       send_single_mail to: @user.email,
-                       subject_key: "email.missed_yesterday.subject",
-                       css: 'missed_yesterday',
-                       locale: locale_fallback(user.locale)
+                       subject_key: @subject_key,
+                       subject_params: @subject_params,
+                       locale: @user.locale
     end
   end
 
-  def group_membership_approved(user, group)
-    @user = user
-    @group = group
+  def membership_request_approved(recipient, event)
+    @user = recipient
+    @group = event.eventable.group
 
     send_single_mail to: @user.email,
                      reply_to: @group.admin_email,
                      subject_key: "email.group_membership_approved.subject",
-                     subject_params: {prefix: email_subject_prefix(@group.full_name)},
-                     locale: locale_fallback(@user.locale)
+                     subject_params: {group_name: @group.full_name},
+                     locale: @user.locale
   end
 
-  def added_to_group(user: nil, inviter: nil, group: nil, message: nil)
-    @user = user
-    @inviter = inviter || group.admins.first
-    @group = group
-    @message = message
+  def user_added_to_group(recipient, event)
+    @user    = recipient
+    @group   = event.eventable.group
+    @inviter = event.eventable.inviter || @group.admins.first
 
     send_single_mail to: @user.email,
                      from: from_user_via_loomio(@inviter),
-                     reply_to: inviter.try(:name_and_email),
-                     subject_key: "email.user_added_to_a_group.subject",
-                     subject_params: { which_group: group.full_name, who: @inviter.name },
-                     locale: locale_fallback(user.try(:locale), inviter.try(:locale))
+                     reply_to: @inviter.try(:name_and_email),
+                     subject_key: "email.user_added_to_group.subject",
+                     subject_params: { which_group: @group.full_name, who: @inviter.name, site_name: AppConfig.theme[:site_name] },
+                     locale: [@user.locale, @inviter.locale]
   end
+
+  def group_export_ready(recipient, group, document)
+    @user     = recipient
+    @document = document
+    send_single_mail to: @user.email,
+                     subject_key: "user_mailer.group_export_ready.subject",
+                     subject_params: {group_name: group.name},
+                     locale: @user.locale
+  end
+
+  def login(user:, token:)
+    @user = user
+    @token = token
+    send_single_mail to: @user.email,
+                     subject_key: "email.login.subject",
+                     subject_params: {site_name: AppConfig.theme[:site_name]},
+                     locale: @user.locale
+  end
+
+  def user_reactivated(recipient, event)
+    @user = recipient
+    @token = recipient.login_tokens.create(is_reactivation: true)
+    send_single_mail to: @user.email,
+                     subject_key: "email.reactivate.subject",
+                     subject_params: {site_name: AppConfig.theme[:site_name]},
+                     locale: @user.locale
+  end
+
+  def start_decision(received_email:)
+    @email = received_email
+    send_single_mail to: @email.sender_email,
+                     subject_key: "email.start_decision.subject",
+                     locale: @email.locale
+  end
+
+  def contact_request(contact_request:)
+    @contact_request = contact_request
+
+    send_single_mail to: @contact_request.recipient.email,
+                     from: from_user_via_loomio(@contact_request.sender),
+                     reply_to: @contact_request.sender.name_and_email,
+                     subject_key: "email.contact_request.subject",
+                     subject_params: { name: @contact_request.sender.name,
+                                       site_name: AppConfig.theme[:site_name]},
+                     locale: [@contact_request.recipient.locale, @contact_request.sender.locale]
+  end
+
 end

@@ -2,51 +2,33 @@ require 'rails_helper'
 describe 'CommentService' do
   let(:user) { create :user }
   let(:another_user) { create :user }
-  let(:discussion) { create :discussion, author: user }
+  let(:group) { create(:formal_group) }
+  let(:discussion) { create :discussion, group: group, author: user }
   let(:comment) { create :comment, discussion: discussion, author: user }
-  let(:comment_vote) { create :comment_vote, comment: comment, user: user }
+  let(:reaction) { create :reaction, reactable: comment, user: user }
   let(:reader) { DiscussionReader.for(user: user, discussion: discussion) }
   let(:comment_params) {{ body: 'My body is ready' }}
 
   before do
-    discussion.group.members << another_user
-  end
-
-  describe 'like' do
-    it 'creates a like for the current user on a comment' do
-      expect { CommentService.like(comment: comment, actor: user) }.to change { CommentVote.count }.by(1)
-    end
-
-    it 'updates the comments liker ids and names' do
-      CommentService.like(comment: comment, actor: user)
-      expect(comment.reload.liker_ids_and_names[user.id]).to eq user.name
-    end
-  end
-
-  describe 'unlike' do
-    before { comment_vote }
-
-    it 'removes a like for the current user on a comment' do
-      expect { CommentService.unlike(comment: comment, actor: user) }.to change { CommentVote.count }.by(-1)
-    end
-
-    it 'updates the comments liker ids and names' do
-      CommentService.unlike(comment: comment, actor: user)
-      expect(comment.reload.liker_ids_and_names[user.id]).to eq nil
-    end
+    group.add_member! another_user
   end
 
   describe 'destroy' do
-    after do
-      CommentService.destroy(comment: comment, actor: user)
-    end
 
     it 'checks the actor has permission' do
       user.ability.should_receive(:authorize!).with(:destroy, comment)
+      CommentService.destroy(comment: comment, actor: user)
     end
 
     it 'deletes the comment' do
       comment.should_receive :destroy
+      CommentService.destroy(comment: comment, actor: user)
+    end
+
+    it 'nullifies the parent_id of replies' do
+      child = create(:comment, discussion: comment.discussion, parent: comment)
+      CommentService.destroy(comment: comment, actor: user)
+      expect(child.reload.parent_id).to eq nil
     end
   end
 
@@ -55,6 +37,14 @@ describe 'CommentService' do
     it 'authorizes that the user can add the comment' do
       user.ability.should_receive(:authorize!).with(:create, comment)
       CommentService.create(comment: comment, actor: user)
+    end
+
+    it 'sets my volume to loud' do
+      user.update(email_on_participation: true)
+      reader = DiscussionReader.for(discussion: comment.discussion, user: user)
+      reader.set_volume!("normal")
+      CommentService.create(comment: comment, actor: user)
+      expect(reader.reload.computed_volume).to eq "loud"
     end
 
     it 'saves the comment' do
@@ -83,9 +73,9 @@ describe 'CommentService' do
       end
 
       it 'updates the discussion reader' do
+        user.update_attribute(:email_on_participation, false)
         CommentService.create(comment: comment, actor: user)
-        expect(reader.reload.participating).to eq true
-        expect(reader.reload.volume.to_sym).to eq :loud
+        expect(reader.reload.computed_volume.to_sym).to eq :normal
       end
 
       it 'publishes a comment replied to event if there is a parent' do
@@ -98,9 +88,18 @@ describe 'CommentService' do
         expect { CommentService.create(comment: comment, actor: user) }.to_not change { Event.where(kind: 'comment_replied_to').count }
       end
 
-      it 'does not publish a comment replied to event if the author is the same as the replyee' do
+      it 'does not send any notifications if the author is the same as the replyee' do
         comment.parent = create :comment, author: user
-        expect { CommentService.create(comment: comment, actor: user) }.to_not change { Event.where(kind: 'comment_replied_to').count }
+        expect { CommentService.create(comment: comment, actor: user) }.to_not change { ActionMailer::Base.deliveries.count }
+        expect(Notification.count).to eq 0
+      end
+
+      it 'does not notify the parent author even if mentioned' do
+        comment.parent = create :comment, author: another_user, discussion: discussion
+        comment.body = "A mention for @#{another_user.username}!"
+
+        expect { CommentService.create(comment: comment, actor: user) }.to_not change { Event.where(kind: 'user_mentioned').count }
+        expect(comment.mentioned_users).to include comment.parent.author
       end
     end
 
@@ -131,10 +130,11 @@ describe 'CommentService' do
       expect(comment.reload.body).to eq comment_params[:body]
     end
 
-    it 'notifies new mentions' do
+    it 'does not renotify old mentions' do
       comment_params[:body] = "A mention for @#{another_user.username}!"
-      expect(Events::UserMentioned).to receive(:publish!).with(comment, another_user)
-      CommentService.update(comment: comment, params: comment_params, actor: user)
+      expect { CommentService.update(comment: comment, params: comment_params, actor: user) }.to change { another_user.notifications.count }.by(1)
+      comment_params[:body] = "Hello again @#{another_user.username}"
+      expect { CommentService.update(comment: comment, params: comment_params, actor: user) }.to_not change  { another_user.notifications.count }
     end
 
     it 'does not update an invalid comment' do

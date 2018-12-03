@@ -1,4 +1,4 @@
-ActiveAdmin.register Group do
+ActiveAdmin.register FormalGroup, as: 'Group' do
 
   controller do
     def permitted_params
@@ -6,31 +6,20 @@ ActiveAdmin.register Group do
     end
 
     def find_resource
-      Group.friendly.find(params[:id])
-    end
-
-    def collection
-      super.includes(:group_request)
+      FormalGroup.friendly.find(params[:id])
     end
   end
 
-  actions :index, :show, :edit, :update
-
+  actions :index, :show, :new, :edit, :update, :create
 
   filter :name
   filter :description
   filter :memberships_count
   filter :created_at
-  filter :is_commercial
-  filter :subdomain
+  filter :handle
+  filter :analytics_enabled
 
   scope :parents_only
-  scope :engaged
-  scope :engaged_but_stopped
-  scope :has_members_but_never_engaged
-  scope :visible_on_explore_front_page
-  scope :is_subscription
-  scope :is_donation
 
   batch_action :delete_spam do |group_ids|
     group_ids.each do |group_id|
@@ -54,81 +43,123 @@ ActiveAdmin.register Group do
     selectable_column
     column :id
     column :name do |g|
-      simple_format(g.full_name.sub(' - ', "\n \n> "))
-    end
-    column :contact do |g|
-      admin_name = ERB::Util.h(g.requestor_name)
-      admin_email = ERB::Util.h(g.requestor_email)
-      simple_format "#{admin_name} \n &lt;#{admin_email}&gt;"
+      g.full_name
     end
 
-    column "Size", :memberships_count
-
+    column "Members", :memberships_count
     column "Discussions", :discussions_count
-    column "Motions", :motions_count
     column :created_at
     column :description, :sortable => :description do |group|
       group.description
     end
-    column :is_commercial
     column :archived_at
+    column :analytics_enabled
+    column :enable_experiments
     actions
   end
 
   show do |group|
-    attributes_table do
-      row :group_request
-      row :standard_plan_link do link_to("standard subscription link", ChargifyService.standard_plan_url(group), target: '_blank' ) end
-      row :plus_plan_link do link_to("plus subscription link", ChargifyService.plus_plan_url(group), target: '_blank') end
-      group.attributes.each do |k,v|
-        row k, v.inspect
+    render 'graph', { group: group }
+    render 'stats', { group: group }
+
+    if Plugins.const_defined?("LoomioOrg")
+      if group.subscription.present?
+        render 'subscription', { subscription: group.subscription }
       end
     end
 
-    panel('Subscription links') do
-      table
+    panel("Subgroups") do
+      table_for group.subgroups.order(memberships_count: :desc).each do |subgroup|
+        column :name do |g|
+          link_to g.name, admin_group_path(g)
+        end
+        column :memberships_count
+        column :discussions_count
+      end
     end
 
-    panel("Group Admins") do
-      table_for group.admins.each do |admin|
-        column :name
-        column :email do |user|
-          if user.email == group.admin_email
-            simple_format "#{mail_to(user.email,user.email)}"
-          else
-            mail_to(user.email,user.email)
+    panel("Members") do
+      table_for group.memberships.active.each do
+        column(:name) { |m| link_to m.user.name, admin_user_path(m.user) }
+        column(:email) { |m| m.user.email }
+        column(:coordinator) { |m| m.admin }
+        column "Support" do |m|
+          if m.user.name.present?
+            link_to("Search for #{m.user.name}", "https://support.loomio.org/scp/users.php?a=search&query=#{m.user.name.downcase.split(' ').join('+')}")
           end
         end
       end
     end
 
-    panel("Group members") do
-      table_for group.members.each do |member|
-        column :user_id do |user|
-          link_to user.id, admin_user_path(user)
-        end
-        column :name
-        column :email
-        column :deactivated_at
-      end
-    end
+    active_admin_comments
 
-    panel("Subgroups") do
-      table_for group.subgroups.each do |subgroup|
-        column :name do |g|
-          link_to g.name, admin_group_path(g)
-        end
-        column :id
+    attributes_table do
+      if Plugins.const_defined?("LoomioBuyerExperience")
+        row :standard_plan_link do link_to("standard subscription link", ChargifyService.standard_plan_url(group), target: '_blank' ) end
+        row :plus_plan_link do link_to("plus subscription link", ChargifyService.plus_plan_url(group), target: '_blank') end
+        row :stats_report_link do link_to("Metabase!", "https://metabase.loomio.io/dash/14?parent_group_id=" + group.id.to_s, target: '_blank') end
+        row('Subscription status') do |group| group.subscription.kind if group.subscription end
       end
-    end
 
-    panel("Pending invitations") do
-      table_for group.pending_invitations.each do |invitation|
-        column :recipient_email
-        column :link do |i|
-          invitation_url(i)
+      row :id
+      row :name
+      row :key
+      row :full_name
+      row :created_at
+      row :updated_at
+      row :parent
+      row :creator_id
+      row :description
+      row :archived_at
+      row :discussions_count
+      row :memberships_count
+      row :admin_memberships_count
+      row :unverified_memberships_count
+      row :public_discussions_count
+      row :payment_plan
+
+      row "Group Privacy" do
+        if group.is_visible_to_public && group.discussion_privacy_options == 'public_only'
+          "Open"
+        elsif group.is_visible_to_public && group.discussion_privacy_options != 'public_only'
+          "Closed"
+        elsif group.is_visible_to_parent_members && !group.is_visible_to_public
+          "Closed"
+        elsif !group.is_visible_to_parent_members && !group.is_visible_to_public
+          "Secret"
+        else
+          "Group privacy unknown"
         end
       end
+
+      row :is_visible_to_public
+      row :discussion_privacy_options
+      row :is_visible_to_parent_members
+      row :parent_members_can_see_discussions
+      row :members_can_add_members
+      row :membership_granted_upon
+      row :members_can_edit_discussions
+      row :members_can_edit_comments
+      row :members_can_raise_motions
+      row :members_can_vote
+      row :members_can_start_discussions
+      row :members_can_create_subgroups
+      row :handle
+      row :is_referral
+      row :cohort_id
+      row :subscription_id
+      row :enable_experiments
+      row :analytics_enabled
+      row :experiences
+      row :features
+      row :theme_id
+      row :cover_photo_file_name
+      row :cover_photo_content_type
+      row :cover_photo_updated_at
+      row :logo_file_name
+      row :logo_content_type
+      row :logo_file_size
+      row :logo_updated_at
     end
 
     if group.archived_at.nil?
@@ -140,25 +171,51 @@ ActiveAdmin.register Group do
         link_to 'Unarchive this group', unarchive_admin_group_path(group), method: :post, data: {confirm: "Are you sure you wanna unarchive #{group.name}, pal?"}
       end
     end
-    active_admin_comments
+
+    panel 'Move group' do
+      form action: move_admin_group_path(group), method: :post do |f|
+        f.label "Parent group id / key"
+        f.input name: :parent_id, value: group.parent_id
+        f.input type: :submit, value: "Move group"
+      end
+    end
+
+    panel 'Set handle / subdomain' do
+      form action: handle_admin_group_path(group), method: :post do |f|
+        f.label "Handle"
+        f.input name: :handle, value: group.handle
+        f.input type: :submit, value: "Set handle"
+      end
+    end
   end
 
   form do |f|
     f.inputs "Details" do
-      f.input :id, :input_html => { :disabled => true }
-      f.input :name, :input_html => { :disabled => true }
-      f.input :description
-      f.input :subdomain
-      f.input :theme, as: :select, collection: Theme.all
-      f.input :max_size
-      f.input :is_commercial
-      f.input :category_id, as: :select, collection: Category.all
+      if f.object.persisted?
+        f.input :id, :input_html => { :disabled => true }
+      end
+      f.input :name, :input_html => { :disabled => f.object.persisted? }
+      f.input :admin_tags, label: "Tags (separated by a space)"
+      f.input :description, :input_html => { :disabled => true }
+      f.input :parent_id, label: "Parent Id"
+      f.input :handle, as: :string
+      f.input :subscription_id, label: "Subscription Id"
     end
     f.actions
   end
 
-  collection_action :massey_data, method: :get do
-    render json: Group.visible_to_public.pluck(:id, :parent_id, :name, :description)
+  member_action :move, method: :post do
+    group  = Group.friendly.find(params[:id])
+    parent = Group.friendly.find(params[:parent_id])
+    GroupService.move(group: group, parent: parent, actor: current_user)
+    redirect_to admin_group_path(group)
+  end
+
+  member_action :handle, method: :post do
+    params.permit(:id, :handle)
+    group = Group.friendly.find(params[:id])
+    group.update(handle: params[:handle])
+    redirect_to admin_group_path(group)
   end
 
   member_action :archive, :method => :post do
@@ -174,16 +231,4 @@ ActiveAdmin.register Group do
     flash[:notice] = "Unarchived #{group.name}"
     redirect_to [:admin, :groups]
   end
-
-  #controller do
-    #def set_pagination
-      #if params[:pagination].blank?
-        #@per_page = 40
-      #elsif params[:pagination] == 'false'
-        #@per_page = 999999999
-      #else
-        #@per_page = params[:pagination]
-      #end
-    #end
-  #end
 end

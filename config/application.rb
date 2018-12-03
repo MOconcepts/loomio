@@ -5,13 +5,21 @@ require 'rails/all'
 Bundler.require(*Rails.groups)
 
 require_relative '../lib/version'
-require_relative '../lib/version/major'
-require_relative '../lib/version/minor'
-require_relative '../lib/version/patch'
-require_relative '../lib/version/pre'
+
+def lmo_asset_host
+  parts = []
+  parts << (ENV['FORCE_SSL'] ? 'https://' : 'http://')
+  parts << ENV['CANONICAL_HOST']
+  if ENV['CANONICAL_PORT']
+    parts << ':'
+    parts << ENV['CANONICAL_PORT']
+  end
+  parts.join('')
+end
 
 module Loomio
   class Application < Rails::Application
+    config.middleware.use Rack::Attack if ENV['USE_RACK_ATTACK']
     config.active_job.queue_adapter = :delayed_job
 
     config.generators do |g|
@@ -27,7 +35,7 @@ module Loomio
     # config.paths.add "extras", eager_load: true
     # config.autoload_paths += Dir["#{config.root}/app/forms/**/"]
 
-    config.middleware.use Rack::Attack
+    # config.middleware.use Rack::Attack
     # Only load the plugins named here, in the order given (default is alphabetical).
     # :all can be used as a placeholder for all plugins not explicitly named.
     # config.plugins = [ :exception_notification, :ssl_requirement, :all ]
@@ -45,7 +53,7 @@ module Loomio
 
     # config.i18n.available_locales = # --> don't use this, make mostly empty yml files e.g. fallback.be.yml
     config.i18n.enforce_available_locales = false
-    # config.i18n.fallbacks = # --> see initilizers/loomio_i18n
+    config.i18n.fallbacks = [:en] # --> see initilizers/loomio_i18n
 
     # Configure the default encoding used in templates for Ruby 1.9.
     config.encoding = "utf-8"
@@ -59,20 +67,11 @@ module Loomio
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.4'
 
-    config.action_mailer.default_url_options = {
-      host:     ENV['CANONICAL_HOST'],
-      protocol: ENV['FORCE_SSL'] ? 'https' : 'http'
-    }
-
-    config.roadie.url_options = nil
-
     # required for heroku
     config.assets.initialize_on_precompile = false
 
     config.quiet_assets = true
     config.action_mailer.preview_path = "#{Rails.root}/spec/mailers/previews"
-
-    config.active_record.raise_in_transactional_callbacks = true
 
     if ENV['FOG_PROVIDER']
       def self.fog_credentials
@@ -91,5 +90,39 @@ module Loomio
         fog_public: true
       }
     end
+
+    config.action_mailer.raise_delivery_errors = true
+    config.action_mailer.perform_deliveries = true
+
+    if ENV['SMTP_SERVER']
+      config.action_mailer.delivery_method = :smtp
+      config.action_mailer.smtp_settings = {
+        address: ENV['SMTP_SERVER'],
+        port: ENV['SMTP_PORT'],
+        authentication: ENV['SMTP_AUTH'],
+        user_name: ENV['SMTP_USERNAME'],
+        password: ENV['SMTP_PASSWORD'],
+        domain: ENV['SMTP_DOMAIN'],
+        ssl: ENV['SMTP_USE_SSL'],
+        openssl_verify_mode: ENV.fetch('SMTP_SSL_VERIFY_MODE', 'none')
+      }.compact
+    else
+      config.action_mailer.delivery_method = :test
+    end
+
+    config.action_mailer.default_url_options = config.action_controller.default_url_options = {
+      host:     ENV['CANONICAL_HOST'],
+      port:     ENV['CANONICAL_PORT'],
+      protocol: ENV['FORCE_SSL'] ? 'https' : 'http'
+    }.compact
+
+    config.action_mailer.asset_host = lmo_asset_host
+    config.action_dispatch.tld_length = (ENV['TLD_LENGTH'] || 1).to_i
+
+    config.action_controller.include_all_helpers = false
+
+    # expecting something like wss://hostname/cable, defaults to wss://canonical_host/cable
+    config.action_cable.url = ENV['ACTION_CABLE_URL'] if ENV['ACTION_CABLE_URL']
+    config.action_cable.allowed_request_origins = [ENV['CANONICAL_HOST']]
   end
 end

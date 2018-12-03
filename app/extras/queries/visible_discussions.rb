@@ -1,13 +1,12 @@
 class Queries::VisibleDiscussions < Delegator
-  def initialize(user:, groups: nil, group_ids: nil)
+  def initialize(user:, group_ids: nil)
     @user = user || LoggedOutUser.new
-    @group_ids = group_ids.presence || Array(groups).map(&:id).presence || user.group_ids
+    @group_ids = group_ids.presence || user.group_ids
 
     @relation = Discussion.
                   joins(:group).
                   where('groups.archived_at IS NULL').
-                  published.
-                  includes(:author, {current_motion: [:author, :outcome_author]}, {group: [:parent]})
+                  includes(:author, :polls, {group: [:parent]})
     @relation = self.class.apply_privacy_sql(user: @user, group_ids: @group_ids, relation: @relation)
     super(@relation)
   end
@@ -36,46 +35,17 @@ class Queries::VisibleDiscussions < Delegator
     self
   end
 
-  def join_to_motions
-    unless @joined_to_motions
-      @relation = @relation.joins("LEFT OUTER JOIN motions mo ON mo.discussion_id = discussions.id AND mo.closed_at IS NULL")
-      @joined_to_motions = true
-    end
-  end
-
-  def join_to_starred_motions
-    unless @joined_to_starred_motions
-      join_to_discussion_readers
-      @relation = @relation.joins("LEFT OUTER JOIN motions smo ON smo.discussion_id = discussions.id AND smo.closed_at IS NULL AND dv.starred = true")
-      @joined_to_starred_motions = true
-    end
-  end
-
-  def with_active_motions
-    join_to_motions
-    @relation = @relation.where('mo.id IS NOT NULL')
-    self
-  end
-
-  def participating
-    join_to_discussion_readers
-    @relation = @relation.where('dv.participating = true')
-    self
-  end
-
-  def starred
-    join_to_discussion_readers
-    @relation = @relation.where('dv.starred = true')
-    self
-  end
-
   def unread
-    join_to_discussion_readers
-    @relation = @relation.where('dv.last_read_at IS NULL OR (dv.last_read_at < discussions.last_activity_at)')
+    return self unless @user.is_logged_in?
+    join_to_discussion_readers && join_to_memberships
+    @relation = @relation.
+                  where('(dv.dismissed_at IS NULL) OR (dv.dismissed_at < discussions.last_activity_at)').
+                  where('dv.last_read_at IS NULL OR (dv.last_read_at < discussions.last_activity_at)')
     self
   end
 
   def muted
+    return self unless @user.is_logged_in?
     join_to_discussion_readers && join_to_memberships
     @relation = @relation.where('(dv.volume = :mute) OR (dv.volume IS NULL AND m.volume = :mute) ',
                                 {mute: DiscussionReader.volumes[:mute]})
@@ -83,9 +53,25 @@ class Queries::VisibleDiscussions < Delegator
   end
 
   def not_muted
+    return self unless @user.is_logged_in?
     join_to_discussion_readers && join_to_memberships
     @relation = @relation.where('(dv.volume > :mute) OR (dv.volume IS NULL AND m.volume > :mute)',
                                 {mute: DiscussionReader.volumes[:mute]})
+    self
+  end
+
+  def recent
+    @relation = @relation.where('last_activity_at > ?', 6.weeks.ago)
+    self
+  end
+
+  def is_open
+    @relation = @relation.is_open
+    self
+  end
+
+  def is_closed
+    @relation = @relation.is_closed
     self
   end
 
@@ -95,11 +81,11 @@ class Queries::VisibleDiscussions < Delegator
   end
 
   def sorted_by_importance
-    if @user.is_logged_in?
-      join_to_starred_motions && join_to_motions
-      @relation = @relation.order('smo.closing_at ASC, mo.closing_at ASC, dv.starred DESC NULLS LAST, last_activity_at DESC')
+    @relation = if @user.is_logged_in?
+      @relation.joins("LEFT OUTER JOIN discussion_readers dr ON dr.user_id = #{@user.id} AND dr.discussion_id = discussions.id")
+               .order('discussions.importance DESC, last_activity_at DESC')
     else
-      @relation = @relation.order(last_activity_at: :desc)
+      @relation = @relation.order(importance: :desc, last_activity_at: :desc)
     end
     self
   end
@@ -107,14 +93,18 @@ class Queries::VisibleDiscussions < Delegator
   def self.apply_privacy_sql(user: nil, group_ids: [], relation: nil)
     user ||= LoggedOutUser.new
 
-    relation = relation.where('discussions.group_id': group_ids) if group_ids.any?
+    relation = relation.where(
+      'discussions.group_id IN (:group_ids) OR discussions.guest_group_id IN (:group_ids)',
+    group_ids: group_ids) if group_ids.any?
 
     if user.is_logged_in?
       # select where
       # the discussion is public
       # or they are a member of the group
+      # or they are a member of the guest group
       # or user belongs to parent group and permission is inherited
       relation.where('((discussions.private = false) OR
+                       (discussions.guest_group_id IN (:user_group_ids)) OR
                        (discussions.group_id IN (:user_group_ids)) OR
                        (groups.parent_members_can_see_discussions = TRUE AND groups.parent_id IN (:user_group_ids)))',
                      user_group_ids: user.group_ids)

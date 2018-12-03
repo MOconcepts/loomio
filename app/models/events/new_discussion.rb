@@ -1,11 +1,10 @@
 class Events::NewDiscussion < Event
-  def self.publish!(discussion)
-    create(kind: 'new_discussion',
-           eventable: discussion).tap { |e| EventBus.broadcast('new_discussion_event', e) }
-  end
+  include Events::LiveUpdate
+  include Events::Notify::Mentions
+  include Events::Notify::ThirdParty
 
-  def group_key
-    eventable.group.key
+  def self.publish!(discussion)
+    super discussion, user: discussion.author
   end
 
   def discussion

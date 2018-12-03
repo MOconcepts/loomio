@@ -1,293 +1,353 @@
 sv:
+  reactions:
+    slight_smile: Gilla
+    heart: Älska
+    laughing: Skratta
+    clap: Applådera
+    hugging: Krama
+    sunglasses: Coolt
+    wink: Blinka
+    nerd: Smart
+    relieved: Lättad
+    worried: Bekymrad
+    confused: Förvirrad
+    confounded: Förväxlas
+    neutral_face: Neutral
+    slight_frown: Rynka pannan
+    disappointed: Besviken
+    angry: Arg
+    weary: Trött
+    astonished: Förvånad
+    rolling_eyes: Rullar ögon
+    cry: Gråter
+    scream: Skriker
+    sleeping: Utråkad
+    thinking: Tänker
+    raised_hands: Händerna i luften
+    pray: Ber
+    fingers_crossed: Fingrarna i kors
+    v: Fred
+    metal: Metall
+    ok_hand: Ok
+    wave: Vinka
+    thumbsup: Tumme upp
+    thumbsdown: Tumme ner
+  poll_types:
+    proposal: Förslag
+    count: Bock
+    poll: Röstning
+    dot_vote: Punktröstning
+    meeting: Tidsröstning
+    ranked_choice: Valfritt val
+  timezones:
+    local: Lokal tid ({{value}})
   common:
-    group: Grupp
-    groups: Grupper
+    you: Du
+    expand: Expandera
+    all_day: Hela dagen
+    ok_got_it: Ok, förstår
+    learn_more: Lär dig mer
+    not_found: Inte hittad
+    time_zone: Tidszon
+    local_time: Lokal tid
+    confirm_discard_changes: Kasta bort dina ändringar?
+    time:
+      am: förmiddag
+      pm: eftermiddag
+    closing_in: 'Stänger {{time}}'
+    closed_ago: 'Stängd {{time}}'
+    volume: 'Volym'
+    notification_volume: 'Notifieringsvolym'
+    group: 'Grupp'
+    groups: 'Grupper'
+    threads: 'Trådar'
+    decisions: 'Beslut'
+    settings: 'Inställningar'
+    help: 'Hjälp'
+    anonymous: Anonym
     privacy:
-      public: Offentlig
-      private: Privat
+      privacy: 'Integritet'
+      public: 'Offentlig'
+      open: 'Öppen'
+      closed: 'Stängd'
+      private: 'Privat'
+      secret: 'Hemlig'
+    selected: 'Vald'
     date_range:
-      today: I dag
+      today: 'I dag'
+      yesterday: 'Igår'
+      thisweek: 'Denna Vecka'
+      thismonth: 'Denna Månad'
+      older: 'Äldre'
+    more_help: 'Mer hjälp'
     models:
-      proposal: Förslag
+      proposal: 'Förslag'
+    copy: 'Kopiera'
+    copy_text: 'Kopiera text'
+    copied: 'Kopierad till urklipp'
+    points_abbrev: Varje röst är värd {{score}} poäng
+    total: Totalt
     action:
-      save: Spara
-      edit: Redigera
-      like: Gilla
-      unlike: Sluta gilla
-      cancel: Ångra
+      next: 'Nästa'
+      close: 'Stäng'
+      reopen: 'Öppna igen'
+      save: 'Spara'
+      save_changes: 'Spara ändringar'
+      update_settings: 'Uppdatera inställningar'
+      reply: 'Svara'
+      edit: 'Redigera'
+      remove: 'Ta bort'
+      like: 'Gilla'
+      back: 'Tillbaka'
+      unlike: 'Sluta gilla'
+      update: 'Uppdatera'
+      cancel: 'Ångra'
+      show_more: "Visa mer"
+      view_all: "Visa Alla"
+      new_thread: "Ny tråd"
+      add_subgroup: 'Skapa undergrupp'
+      loading: 'Laddar'
+      translate: 'Översätt'
+      translated: 'Översättning av Bing Translator'
+      upload: 'Ladda upp'
+      uploading: 'Laddar upp'
+      load_more: 'Ladda fler'
+      share: Dela
+      ok: Ok!
+      retry: Försök igen
+      done: Klar
+      start: Starta
+      delete: Radera
+      unsubscribe: Sluta prenumerera
+      subscribe: Prenumerera
+      remind: Påminn
+      resend: Skicka igen
+      send: Skicka
+      joined: Gick med
+      last_seen: Senast sedd
+      invite: Bjud in
+      resent: Inbjudan skickad igen
+      export: Exportera
+      fork: Gaffel
+    formatting_help:
+      label: 'Utformning'
+      title: 'Lär dig hur du använder Märkspråk för att formatera din text'
+  ordinal:
+    _1: 1:a
+    _2: 2:a
+    _3: 3:e
+    _4: 4:e
+    _5: 5:e
+    _6: 6:e
+    _7: 7:e
+    _8: 8:e
+    _9: 9:e
+    _10: 10:e
+  devise:
+    sessions:
+      signed_up: Registreringen lyckades!
+    failure:
+      inactive: 'Det är ett deaktiverat konto associerat med denna e-postadress. Om du vill återaktivera ditt konto, kontakta oss.'
   error_page:
-    forbidden: Du saknar behörighet att göra detta.
-  proposal_outcome_panel:
-    heading: Resultat
-  proposal_outcome_form:
-    outcome_label: Resultat av förslaget
-    publish_outcome: publicera status
+    forbidden: 'Du saknar behörighet att göra detta.'
+    page_not_found: 'Vi kunde inte hitta det. Det kan ha blivit raderat eller flyttat.'
+    internal_server_error: 'Vi är ledsna, men något gick fel. Var god försök igen.'
+  verify_email_notice:
+    please_verify: Tack för att du deltar! Vänligen kolla din e-post efter en länk för att verifiera din röst.
+  verify_stances:
+    title: Kontrollera röster
+    description: Läs igenom rösterna nedan och kontrollera att de är dina.
+    verify: Verifiera
+    remove: Ta bort
+    verify_success: Röst verifierad
+    remove_success: Röst borttagen
+    all_done: Bra jobbat, du har verfierat alla röster.
+  previous_polls_page:
+    heading: Aktiviter i {{namn}}
+    polls_count: Visar {{loaded}} av {{total}} beslut
+    search_activities: Sök beslut
+  volume_levels:
+    loud: 'Ljud'
+    normal: 'Normal'
+    quiet: 'Tyst'
+    mute: 'Tysta ned'
+    unmute: 'Ta bort nedtystning'
+  change_volume_form:
+    aria_label: "Byt epostinställningars formulär"
+    loud_label: "All aktivitet"
+    normal_label: "Meddelanden"
+    quiet_label: "Inga e-post"
+    mute_label: "Tysta ned"
+    discussion:
+      title: "Tråda e-post inställningar"
+      loud_description: "Du kommer stt få ett e-post när det sker aktivitet i tråden."
+      normal_description: "Du kommer att få en e-post när ett förslag har startats, håller på att stänga, eller resultatet är postat."
+      quiet_description: "Du kommer inte få e-post om denna tråd."
+      apply_to_all: "Tillämpa dessa inställningar på alla trådar i denna grupp."
+      messages:
+        loud: "Du kommer att få e-post om aktivitet i denna tråd."
+        normal: "Du kommer att få e-post om förslag i denna tråd."
+        quiet: "Du kommer inte få e-post om denna tråd."
+    membership:
+      title: "E-postinställningar för {{title}}"
+      loud_description: "Du kommer att få e-post vid aktivitet i denna grupp."
+      normal_description: "Du kommer bara få e-post vid meddelanden i denna grupp."
+      quiet_description: "Du kommer inte få e-post om aktivitet i denna grupp."
+      apply_to_all: "Tillämpa dessa inställningar i alla mina grupper."
+      messages:
+        loud: "Du kommer få e-post om alla aktiviteter i denna grupp. "
+        normal: "Du kommer bara få e-post vid meddelanden i denna grupp."
+        quiet: "Du kommer inte bli mailad om den här grupp."
+    all_groups:
+      messages:
+        loud: "Du kommer att bli mailad om alla aktivitetera i alla dina grupper"
+        normal: "Du kommer endast att bli mailade meddelanden i alla dina grupper."
+        quiet: "Du kommer inte att mailas om någon av dina grupper."
+    user:
+      title: E-post inställningar för nya grupper
+      loud_description: "Du kommer bli mailad när det finns aktiviteter i nya grupper du går med."
+      normal_description: "Du kommer bli mailad om meddelanden i nya grupper du går med."
+      quiet_description: "Du kommer inte bli mailad om aktivitet i några nya grupper du går med."
+      apply_to_all: "Tillämpa dessa inställningar i alla mina grupper."
+      messages:
+        loud: "Du kommer att mailas alla aktiviteter i nya grupper."
+        normal: "Du kommer bli mailad om meddelande i nya grupper."
+        quiet: "Du kommer inte bli mailad om nya grupper."
+  close_explanation_modal:
+    aria_label: Stäng tråd
+    close_thread: Stäng tråd
+    body_header: |
+        <p>Stäng gamla eller irrelevanta trådar för att ta bort dem från visning och visa att diskussionen har stängts.</p>
   inbox:
-    clear: Klar
-    unread: Olästa
+    clear: 'Klar'
+    latest: 'Senaste'
+    unread: 'Olästa'
+    closing_in: 'Stänger'
+  sign_up_form:
+    password_label: 'Lösenord:'
+  signed_out_modal:
+    ok: "Ok"
   comment_form:
-    edit_comment: Edit kommentar
-    delete_comment: Ta bort kommentaren
-    confirm_delete_message: Är du säker på att du vill ta bort denna kommentaren?
+    edit_comment: 'Edit kommentar'
+    delete_comment: 'Ta bort kommentaren'
+    confirm_delete_message: 'Är du säker på att du vill ta bort denna kommentaren?'
   navbar:
-    unread: Olästa
-    groups: Grupper
-    user_options:
-      contact_us: Kontakta oss
-      new_group: Ny grupp
-      profile: Profil
-      help: Hjälp
     search:
-      placeholder: Sök
-      discussions: Diskussioner
+      placeholder: 'Sök'
+      discussions: 'Diskussioner'
+    logo_title: 'Hemsida'
+  membership_dropdown:
+    invitation_resent: "Inbjudan skickad igen"
+    make_coordinator: 'Gör till koordinator'
   notifications:
-    header: Notifieringar
+    header: "Notifieringar"
   position_buttons_panel:
     heading: Gör din röst hörd
-  vote_form:
-    heading: Gör din röst hörd
-    i_agree: Jag håller med
-    i_abstain: Jag avstår
-    i_abstain_details: Jag är OK med att gruppen fattar beslut utan mig.
-    i_disagree: Jag håller inte med
-    i_disagree_details: Jag tror att vi skulle kunna hitta något bättre än det här.
-    i_block: Jag blockerar
-    i_block_details: Jag har en stark invändning mot detta förslag och det är inte OK från min sida att gå vidare.
-    submit_position: Sänd ståndpunkt
-  proposal_positions_panel:
-    heading: Ståndpunkter
-  close_proposal_form:
-    close_proposal: Stäng förslag
-  proposal_form:
-    start_proposal: Starta ett förslag
-    edit_proposal: Redigera förslag
-    title_label: Titel
-    closes_at_label: Stänger vid
-    details_label: Detaljer
   discussion_form:
-    group_label: Grupp
-    title_label: Titel
-    context_label: Kontext
-    privacy_label: Sekretesspolicy
-  proposal_expanded:
-    edit_proposal: Redigera förslag
-    close_proposal: Stäng förslag
+    group_label: 'Grupp'
+    title_label: 'Titel'
+    context_label: 'Kontext'
+    privacy_label: 'Sekretesspolicy'
   join_group_button:
     join_group: Bli medlem i gruppen
-    ask_to_join_group: Be att få gå med
   membership_request_form:
     heading: Be att få gå med
     name_label: Namn
     email_label: Email
-    introduction_label: Presentera dig själv
-    submit_button: Be att få gå med
+  revision_history_modal:
+    current_revision: Senaste
+  reactions_display:
+    you: "Du"
   group_page:
-    thread_list:
-      empty:
-        membership_is_invitation_only: För att gå med i denna grupp måste du bli inbjuden av en medlem.
-        membership_is_invitation_by_admin_only: För att gå med i denna grupp måste du bli inbjuden av en koordinator.
-    discussions: Diskussioner
-    invite_people: Bjud in deltagare
-    options_label: Alternativ
+    invite_people: 'Bjud in'
+    options_label: 'Alternativ'
     options:
-      label: Alternativ
-    leave_group:
-      title: Lämna gruppen
+      label: 'Alternativ'
+  group_form:
+    privacy: 'Integritet'
+    submit_start_group: 'Startgrupp'
+    submit_update: 'Uppdatera inställningar'
+  document:
+    form:
+      title_label: Namn
   membership_requests_page:
     approve: Godkänn
     ignore: Ignorera
+  invitation_form:
+    copy_link: 'Kopiera'
+    send: 'Skicka'
+    done: 'Klar'
   memberships_page:
-    members: Medlemmar
-    name_label: Namn
-    coordinator_label: Koordinator
-    remove_member_label: Ta bort
-    remove_membership:
-      submit: Ta bort
+    members: 'Medlemmar'
+    name_label: 'Namn'
+    coordinator_label: 'Koordinator'
+    remove_member_label: 'Ta bort'
   profile_page:
-    change_picture:
-      use_initials: Använd initialer
-    change_password:
-      current_password_label: Nuvarande lösenord
-      new_password_label: Nytt lösenord
-      password_confirmation_label: Konfirmera det nya lösenordet
-    deactivate_user:
-      title: Avaktivera kontot
-      submit: Avaktivera kontot
-    profile: Profil
-    picture_label: Bild
-    name_label: Namn
-    username_label: Användarnamn
-    email_label: Email
-    locale_label: Språk
+    profile: 'Profil'
+    picture_label: 'Bild'
+    name_label: 'Namn'
+    username_label: 'Användarnamn'
+    email_label: 'Email'
+    locale_label: 'Språk'
+  email_settings_page:
+    announcement_label: Meddelanden
   dashboard_page:
-    aria_label: Instrumentbräda
+    aria_label: 'Instrumentbräda'
     mark_as_read: Markera som läst
     threads_from:
-      today: I dag
+      today: 'I dag'
+      yesterday: 'Igår'
+  inbox_page:
+    no_groups:
+      start: Starta
+      or: eller
+  activity_card:
+    unread: Olästa
+    latest: Senaste
   thread_group:
-    aria_label: Gruppnamn
+    aria_label: 'Gruppnamn'
+  thread_context:
+    close_thread: 'Stäng'
+    reopen_thread: 'Öppna igen'
+    mute_thread: 'Tysta ned'
+    delete_thread: 'Radera'
   delete_comment_dialog:
-    title: Ta bort kommentaren
-    question: Är du säker på att du vill ta bort denna kommentaren?
-    confirm: Ta bort kommentaren
+    title: 'Ta bort kommentaren'
+    question: 'Är du säker på att du vill ta bort denna kommentaren?'
+    confirm: 'Ta bort kommentaren'
   new_comment_item:
     context_menu:
-      edit_comment: Edit kommentar
-      delete_comment: Ta bort kommentaren
+      edit_comment: 'Edit kommentar'
+      delete_comment: 'Ta bort kommentaren'
   contact_message_form:
-    name_label: Ditt namn
-    email_label: Din emailadress
-    message_label: Ditt meddelande
-  help_page:
-    coordinating: Koordinera din Loomiogrupp
-    coordinating_details: "Som koordinator är du ansvarig att administrera din Loomiogrupp och bjuda in\nalla deltagare. Förutom att lära sig använda en ny mjukvara, kommer din grupp \natt lära sig nya processer att samarbeta mer effektivt samt att fatta bra beslut \ntillsammans. Här är några tips för att hjälpa din grupp att lyckas:\n"
-    different_ways: Olika sätt att använda Loomio
-    engaging_html: >
-      <h2>Tips för hur du engagerar din grupp</h2>
-
-      <p> Deltagarna kommer att bli entusiastiska och vilja delta när det finns
-      ett engagerande
-
-      förslag på bordet. Ett bra förslag innehåller en handlingsplan för gruppen,
-      så
-
-      att det är direkt uppenbart vad det är ni ska bli överens eller inte
-      överens om.
-
-      Tänk på de nuvarande diskussioner/beslut som din grupp är engagerade i, på
-      plats
-
-      eller per email, och hur mycket lättare det skulle kunna vara med
-      Loomio.</p>
-
-      <p>Om din grupp just har startat, kan du börja med ett enkelt beslut att
-      ge
-
-      alla en chans att lära känna verktyget och se beslutsprocessen
-      i handling.</p>
-
-      <p>Ett annat bra sätt att få personer att engagera sig i en diskussion är
-      att använda funktionen
-
-      @mention för att få med någon specifik person, vilket kommer att skicka ett
-      email och informera dem om att
-
-      de har blivit omnämnda i ett inlägg.</p>
-    example1_html: >
-      <h3>Din grupp behöver diskutera ett ämne och utveckla ett förslag
-      tillsammans</h3>
-
-      <p>Strategi: Diskutera ämnet en stund innan ni arbetar fram ett
-      förslag.</p>
-
-      <p>Diskussioner når ofta det bästa resultatet om ni bygger en gemensam
-      förståelse
-
-      om problemet innan ni väljer en specifik lösning. När personer får
-      möjlighet att
-
-      delta i processen kommer de att vara mer benägna att sluta upp kring
-      resultatet.</p>
-    example2_html: "<h3>Du har redan ett förslag i åtanke och vill få med dig gruppen att gå vidare.</h3>\n<p>Strategi: Starta en diskussion om ett särskilt beslut och lägg fram förslaget direkt.</p> \n<p>Om du har ett tydligt resultat i åtanke, men vill se till att det inte finns några kritiska invändningar,\nkan du använda förslaget för att få snabb återkoppling inför ett beslut.</p>\n<p>Du kan använda detta för att slutföra ett dokument, godkänna en ansökan, eller få sign-off på ett arbete.</p>\n"
-    get_in_touch: Kontakta oss
-    get_in_touch_description_html: "Om du har någon fråga eller vill ge feedback, <a href='%{link}'>skriv till oss</a>."
-    getting_started: Håller på att starta
-    getting_started_description: 'Till vänster, diskuterar gruppen ett ämne, utbyter idéer och information. När gruppen kommer fram till ett beslut, dyker det upp till höger.'
-    getting_the_most: Hur du får mesta möjliga ut av Loomio
-    have_your_say: Gör din röst hörd
-    have_your_say_details_html: >
-      <p>När du är redo att lämna en kommentar, klicka på en av de fyra
-      beslutsknapparna.</p>
-
-      <p>När du har skrivit ditt beslut, ge en kort förklaring. Under
-      cirkeldiagrammet, kan du se
-
-      vad alla andra tycker. Detta gör det snabbt och enkelt att komma in
-      i diskussionen.
-
-      Allteftersom ny information tillkommer kan du ändra din ståndpunkt när som
-      helt.</p>
-    have_a_discussion: Ha en diskussion
-    have_a_discussion_description: Ämnet och relevant bakgrundsinformation finns högst upp på sidan. Använd kommentarboxen för att göra din röst hörd i diskussionen.
-    help: Hjälp
-    how_it_works: Hur det fungerar
-    invitation_html: >
-      <h2>Hur du skriver en bra inbjudan</h2>
-
-      <p>Den första frågan varje ny medlem får är 'vad är den här gruppen till
-      för?'</p>
-
-       <p>Tänk på det enklaste sättet du kan beskriva gruppen: Vad vill du att ni
-      ska
-
-      åstadkomma tillsammans? Vilka typer av beslut kommer ni att fatta? Vem
-      kommer att delta?</p>
-
-      <p>Det kan vara en bra idé att prata med din grupp innan du bjuder in dem
-      att gå med i Loomio.</p>
-
-      <p>Folk vill gärna veta varför de har blivit inbjudna, vad som förväntas av
-      dem,
-
-      samt varför det ska vara värt tiden att lära sig använda ett nytt
-      verktyg.</p>
-    join_the_community: Gå med i communityn
-    images_and_text_formatting: Bild- och textformatering
-    images_and_text_formatting_html: >
-      <p>Loomio använder ‘Markdown’ för bild- och textformatering.
-
-      Du kan markera Markdown på med den lilla grå ikonen under den
-      kommentarboxen.</p>
-
-      <p><a href='https://www.loomio.org/discussions/1124'>Klicka här</a>
-
-      för mer information om hur du använder Markdown.</p>
-    keep_up_to_date: Håll informationen uppdaterad
-    keep_up_to_date_html: >
-      <p>Klickar du på din grupps namn högst upp på skärmen kommer du till din
-      Group Page,
-
-      där du kan se en lista över gruppens alla diskussioner och beslut. Om du är
-      med i mer än
-
-      en grupp, kan du se alla aktiviteter i alla dina grupper samtidigt på
-      startsidan.</p>
-
-      <p>Du kommer även att få ett email när viktiga saker händer i din grupp.
-
-      Du kan ändra dina emailinställningar <a href="%{link}"">här</a>.</p>
-    make_a_decision: Fatta ett beslut
-    make_a_decision_description: 'När gruppen är redo att fatta beslut, kan vem som helst göra ett förslag. Ange tydligt vad som bör göras och även en kort bakgrund så att alla förstår precis vad det innebär att hålla med eller att inte hålla med.'
-    prompt_people_details: "Om du vill få uppmärksamheten från en person i din grupp, skriv '@' följt av deras namn. De kommer då att få ett email som informerar dem att du har nämnt dem i en kommentar."
-    prompt_people_html: "Uppmärksamma en person med <span class='blue'>@mentions</span>"
-    positions_agree_description: '<span>Håller med</span> innebär att du gillar förslaget.'
-    positions_abstain_description: '<span>Avstår</span> innebär att du är osäker, eller kan tänka dig att låta gruppen fatta beslutet utan dig.'
-    positions_disagree_description: '<span>Håller inte med</span> innebär att du tror att det kan finnas ett bättre alternativ, men att du kan tänka dig att foga dig i gruppens beslut.'
-    positions_block_description: '<span>Blockerar</span> innebär att du har allvarliga invändningar och att du skulle bli mycket missnöjd om detta förslag gick igenom.'
-    start_discussion: Starta en engagerande diskussion
-    start_discussion_html: "<p>När du startar en ny diskussion, se till att titeln förmedlar ämnet kortfattat .\nAnvänd Context Panel för att ge all bakgrundsinformation som är nödvändig \nför att gruppen ska få en produktiv och givande diskussion.</p>\n<p>Under diskussionens gång kan Context Panel uppdateras närhelst ny information\ntillkommer. Förutom att klargöra ämnet, kan du använda detta utrymme till att\ndela resurser, summera diskussionens utveckling, eller beskriva de beslutssätt\ndin grupp använder.</p>\n"
-    start_proposal: Hur du skriver ett tydligt förslag
-    start_proposal_html: "<p>Om titeln är tydlig och kortfattad kommer deltagarna direkt att förstå \nvad det är ni ska bli överens eller inte överens om. </p>\n<p>Det gör inget att ett förslag inte skulle komma direkt till en tydlig överenskommelse.\nOm gruppen inte gillar det första förslaget, kan vem som helst komma med ett nytt förslag för att\nta med uppkomna invändningar och föra processen framåt. </p>\n<p>Genom denna dynamiska process kan gruppens kollektiva intelligens generera bättre idéer\nän någon skulle kunnat ha gjort på egen hand.</p>\n<p>Tidsfristen för ett förslag kan utökas när som helst, om det ser ut som beslutet skulle behöva mer tid.\nAlla kommer att få ett email 24 timmar innan ett förslag stängs.</p>\n"
-    video_id: '52025402'
-    video_tutorial: Videotutorial
-    video_tutorial_description: Se videon för en snabb demonstration av hur Loomio fungerar.
+    name_label: 'Ditt namn'
+    subject_label: "Ämne"
+    email_label: 'Din emailadress'
+    message_label: 'Ditt meddelande'
   hint:
-    context: Tips för att använda Context Panel
-    discussion: Tips för att starta en engagerande diskussion
-    invitation: Tips för att skriva en bra inbjudan
-    proposal: Tips för att skriva ett tydligt förslag
-    vote: Du kan ändra din ståndpunkt när som helst
-  pricing_page:
-    intro: >
-      Grupper som har finansiering betalar en abonnemangskostnad för att använda
-      verktyget.
-
-      Grupper som har få medel att betala för sig använder en
-      Betala-vad-du-kan-modell: dvs att deras medlemmar uppmanas att lämna ett
-      frivilligt bidrag. Ditt bidrag innebär att vi kan hålla Loomio oberoende,
-      fri från reklam, samt att den drivs av och för våra medlemmar.
-    organisations: Organisationer
-    organisations_examples: 't ex företag, myndigheter, och ideella organisationer'
-    informal_groups: Informella grupper
-    informal_groups_desc: Medlemmarna i din grupp kommer att få en begäran att ge ett bidrag efter förmåga
-    informal_groups_examples: 't ex familjer, samhällsrörelser, sammanslutningar'
+    context: 'Tips för att använda Context Panel'
+    discussion: 'Tips för att starta en engagerande diskussion'
+    invitation: 'Tips för att skriva en bra inbjudan'
+    proposal: 'Tips för att skriva ett tydligt förslag'
+    vote: 'Du kan ändra din ståndpunkt när som helst'
+  decision_tools_card:
+    proposal_title: Förslag
+    count_title: Bock
+    poll_title: Undersökning
+    meeting_title: Tidsröstning
+    ranked_choice_title: Valfritt val
+  poll_common_form:
+    closed: Stängd
+    start: Starta
+  poll_count_options:
+    'yes': 'Ja'
+    'no': 'Nej'
+  poll_meeting_chart_panel:
+    total: Totalt
+  poll_common_subscribe_form:
+    subscribe: Prenumerera
+  polls_page:
+    heading: Beslut
+  install_slack:
+    progress:
+      invite: Bjud in

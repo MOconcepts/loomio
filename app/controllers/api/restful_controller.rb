@@ -1,11 +1,25 @@
 class API::RestfulController < ActionController::Base
+  include ::ForceSslHelper
   include ::LocalesHelper
   include ::ProtectedFromForgery
-  before_filter :set_application_locale
-  before_filter :set_paper_trail_whodunnit
-  snorlax_used_rest!
+  include ::LoadAndAuthorize
+  include ::CurrentUserHelper
+  include ::SentryRavenHelper
+  include ::ApiErrorRescueHelper
+  around_action :use_preferred_locale       # LocalesHelper
+  before_action :set_paper_trail_whodunnit  # gem 'paper_trail'
+  before_action :set_raven_context          # SentryRavenHelper
+  snorlax_used_rest!                        # gem 'snorlax'
 
   private
+
+  def load_resource
+    if resource_class.respond_to?(:friendly)
+      self.resource = resource_class.friendly.find(params[:id])
+    else
+      self.resource = resource_class.find(params[:id])
+    end
+  end
 
   def create_action
     @event = service.create({resource_symbol => resource, actor: current_user})
@@ -19,24 +33,8 @@ class API::RestfulController < ActionController::Base
     service.destroy({resource_symbol => resource, actor: current_user})
   end
 
-  def current_user
-    super || token_user || LoggedOutUser.new
-  end
-
-  def token_user
-    return unless doorkeeper_token.present?
-    doorkeeper_render_error unless valid_doorkeeper_token?
-    @token_user ||= User.find(doorkeeper_token.resource_owner_id)
-  end
-
   def permitted_params
     @permitted_params ||= PermittedParams.new(params)
-  end
-
-  def load_and_authorize(model, action = :show, optional: false)
-    return if optional && !(params[:"#{model}_id"] || params[:"#{model}_key"])
-    instance_variable_set :"@#{model}", ModelLocator.new(model, params).locate
-    authorize! action, instance_variable_get(:"@#{model}")
   end
 
   def service
@@ -49,15 +47,31 @@ class API::RestfulController < ActionController::Base
 
   def respond_with_resource(scope: default_scope, serializer: resource_serializer, root: serializer_root)
     if resource.errors.empty?
-      response_options = if @event.is_a?(Event)
-        { resources: [@event], scope: scope, serializer: EventSerializer, root: :events }
-      else
-        { resources: [resource], scope: scope, serializer: serializer, root: root }
-      end
-      respond_with_collection response_options
+      respond_with_collection scope: scope, serializer: serializer, root: root
     else
       respond_with_errors
     end
+  end
+
+  def respond_with_collection(scope: default_scope, serializer: resource_serializer, root: serializer_root)
+    if events_to_serialize.any?
+      render json: EventCollection.new(events_to_serialize).serialize!(scope)
+    else
+      render json: resources_to_serialize, scope: scope, each_serializer: serializer, root: root
+    end
+  end
+
+  def events_to_serialize
+    return [] unless @event.is_a?(Event)
+    Array(@event)
+  end
+
+  def resources_to_serialize
+    Array(collection || resource)
+  end
+
+  def default_scope
+    { current_user: current_user }
   end
 
 end

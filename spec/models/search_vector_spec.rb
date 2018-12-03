@@ -5,8 +5,8 @@ describe SearchVector do
     let!(:discussion) { create :discussion, title: "Rabid Wombats", description: "Rendering Snafu" }
     let(:vector) { discussion.search_vector }
     let!(:another_discussion) { create :discussion }
-    let!(:motion) { create :motion, discussion: discussion, name: "Wealthy Arsonists", description: "Caribou Abound" }
     let!(:comment) { create :comment, discussion: discussion, body: "Wellbeing Seminar" }
+    let!(:poll) { create :poll, discussion: discussion, title: "Water Wombats", details: "Phishing Fail" }
 
     it 'can index multiple discussions' do
       SearchVector.index! [discussion.id, another_discussion.id]
@@ -22,18 +22,16 @@ describe SearchVector do
       expect(vector.search_vector).to match /snafu/
     end
 
-    it 'includes motion info' do
-      SearchVector.index! discussion.id
-      expect(vector.search_vector).to match /wealth/
-      expect(vector.search_vector).to match /arson/
-      expect(vector.search_vector).to match /caribou/
-      expect(vector.search_vector).to match /abound/
-    end
-
     it 'includes comment body info' do
       SearchVector.index! discussion.id
       expect(vector.search_vector).to match /wellb/
       expect(vector.search_vector).to match /seminar/
+    end
+
+    it 'includes poll info' do
+      SearchVector.index! discussion.id
+      expect(vector.search_vector).to match /water/
+      expect(vector.search_vector).to match /phish/
     end
 
   end

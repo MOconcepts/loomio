@@ -1,20 +1,19 @@
 class Events::CommentRepliedTo < Event
+  include Events::Notify::InApp
+  include Events::Notify::ByEmail
+  include Events::LiveUpdate
+
   def self.publish!(comment)
-    return unless comment.is_reply? && comment.parent.author != comment.author
-    create(kind: 'comment_replied_to',
-           eventable: comment,
-           created_at: comment.created_at).tap { |e| EventBus.broadcast('comment_replied_to_event', e, comment.parent.author) }
+    super comment, user: comment.author
   end
 
-  def group_key
-    comment.group.key
+  private
+
+  def email_recipients
+    notification_recipients.where(email_when_mentioned: true)
   end
 
-  def discussion_key
-    eventable.discussion.key
-  end
-
-  def comment
-    eventable
+  def notification_recipients
+    User.where(id: eventable.parent.author_id)
   end
 end

@@ -1,65 +1,64 @@
 language: ruby
 rvm:
-  - 2.3.0
-cache: bundler
-sudo: false
+  - 2.5.3
+
+dist: trusty
+sudo: required
+
+group: edge
+
 cache:
+  bundler: true
   directories:
     - vendor/bundle
-    - angular/node_modules
+    - client/node_modules
+
+addons:
+  firefox: "62.0"
+  postgresql: "9.6"
 
 env:
-  - DB=postgresql CXX=g++-4.8
+  global:
+    - DB=postgresql
+    - DISPLAY=:99.0
+    - PATH=$PATH:$TRAVIS_BUILD_DIR/bin
+    - RAILS_ENV=test
+    - PUMA_WORKERS=1
+    - MIN_THREADS=3
+    - MAX_THREADS=3
+    - CC_TEST_REPORTER_ID=9fbffa5d3f717f4adb3cd49ab4742701ae7c604f3c3afea23fd04aed5cb88ce0
+  matrix:
+    - TASK=e2e
+    - TASK=rspec
+    - TASK=plugins
 
 before_install:
-  - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
-  - npm install -g npm@'~2.14.20'
+  - /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16
+  - gem update --system
+  - gem --version
+  - gem install bundler
+  - nvm install 10.11.0
+  - nvm use 10.11.0
+  - npm install -g gulp
 
 install:
-  - nvm install 4.2.6
-  - nvm use 4.2.6
   - bundle install --without development --deployment --jobs=3 --retry=3
-  - cd angular
-  - npm install
-  - cd ..
-
-branches:
-  only:
-    - 'master'
-    - 'user-testing'
-    - 'production'
-    - /^[0-9]+\.[0-9]+$/
+  - gem install s3_uploader
+  - cd client; npm install; cd ..
 
 before_script:
   - cp config/database.yml.$DB config/database.yml
-  - bundle exec rake db:setup RAILS_ENV=test
-  - RAILS_ENV=test bundle exec rails server > /dev/null &
+  - bundle exec rake db:setup
+  - if [ "$TASK" = "plugins" ]; then bundle exec rake plugins:fetch plugins:install; fi
+  - bundle exec rake client:build
+  - bundle exec rake travis:cc_reporter
+  - bundle exec rails server -b 0.0.0.0 > /dev/null &
 
 script:
-  - bundle exec rake plugins:acquire
-  - bundle exec rake travis:prepare
-  - bundle exec rake travis:rspec
-  - bundle exec rake travis:cucumber
-  - bundle exec rake travis:protractor
+  - if [ "$TASK" = "rspec" ];   then bundle exec rspec ; fi
+  - if [ "$TASK" = "e2e" ];     then bundle exec rake travis:e2e; fi
+  - if [ "$TASK" = "plugins" ]; then bundle exec rspec plugins; fi
+  - if [ "$TASK" = "plugins" ]; then bundle exec rake travis:plugins; fi
 
 after_script:
-  - bundle exec ruby lib/tasks/travis_upload_screenshots.rb
-
-addons:
-  postgresql: "9.4"
-  apt:
-    sources:
-      - heroku
-      - ubuntu-toolchain-r-test
-    packages:
-      - expect
-      - heroku-toolbelt
-      - g++-4.8
-  code_climate:
-    repo_token:
-      secure: "RQcqTqhx9hhcWO97ib8s8I8m/ufPbBuKRfEEh4RHNIsBEMpqekaPNHtK+T2ym2pfbCpD+L+0bZ+nMlSCrYz0gklfNnYJlPH4/g1f0SX2OEdq2eUCi9xlRObi9ayXsz7Ujtk14mncNGx+e02TnAtEjtFBT8uyvxn8Ql4djvOTsCg="
-
-after_success:
-  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master"       && bundle exec rake deploy:with_setup loomio-clone master
-  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "user-testing" && bundle exec rake deploy:with_setup loomio-test user-testing
+  - bundle exec rake travis:cleanup

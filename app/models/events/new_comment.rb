@@ -1,21 +1,21 @@
 class Events::NewComment < Event
+  include Events::Notify::ByEmail
+  include Events::Notify::Mentions
+  include Events::LiveUpdate
 
   def self.publish!(comment)
-    create(kind: 'new_comment',
-           eventable: comment,
-           discussion: comment.discussion,
-           created_at: comment.created_at).tap { |e| EventBus.broadcast('new_comment_event', e) }
+    super comment,
+          user: comment.author,
+          parent: comment.parent_event,
+          discussion: comment.discussion
   end
 
-  def group_key
-    discussion.group.key
-  end
+  private
 
-  def discussion_key
-    discussion.key
-  end
-
-  def comment
-    eventable
+  def email_recipients
+    Queries::UsersByVolumeQuery.loud(eventable.discussion)
+                               .where.not(id: eventable.author)
+                               .where.not(id: eventable.mentioned_users)
+                               .where.not(id: eventable.parent_author)
   end
 end

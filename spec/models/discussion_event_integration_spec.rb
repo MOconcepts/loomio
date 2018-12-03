@@ -13,12 +13,12 @@ describe "Discussions and Discussion Items Working together as one beautiful eco
     # all discussion readers should be reset according to their last_read_at.
 
     describe "discussion with 2 comments, then first comment is deleted" do
-      let(:user) { FactoryGirl.create(:user) }
-      let(:commentor){ FactoryGirl.create(:user) }
-      let(:discussion) { FactoryGirl.build(:discussion) }
-      let(:group) { FactoryGirl.create(:group) }
-      let(:first_comment) { FactoryGirl.build(:comment, discussion: discussion) }
-      let(:second_comment) { FactoryGirl.build(:comment, discussion: discussion) }
+      let(:user) { FactoryBot.create(:user) }
+      let(:commentor){ FactoryBot.create(:user) }
+      let(:discussion) { FactoryBot.build(:discussion) }
+      let(:group) { FactoryBot.create(:formal_group) }
+      let(:first_comment) { FactoryBot.build(:comment, discussion: discussion) }
+      let(:second_comment) { FactoryBot.build(:comment, discussion: discussion) }
 
       before do
         group.add_member!(commentor)
@@ -43,6 +43,10 @@ describe "Discussions and Discussion Items Working together as one beautiful eco
         discussion_reader.viewed!
       end
 
+      def view_item(id)
+        discussion_reader.viewed!(id)
+      end
+
       def discussion_reader
         dr = DiscussionReader.for(user: user, discussion: discussion)
         dr.save
@@ -59,7 +63,8 @@ describe "Discussions and Discussion Items Working together as one beautiful eco
         create_second_comment
         delete_first_comment
         reload_everything
-        discussion_reader.unread_items_count.should == 1
+        expect(discussion.items_count -
+               discussion_reader.read_items_count).to eq 1
       end
 
       it "user sees discussion before the comments" do
@@ -67,17 +72,9 @@ describe "Discussions and Discussion Items Working together as one beautiful eco
         create_first_comment
         create_second_comment
         delete_first_comment
-        discussion_reader.unread_items_count.should == 1
-      end
-
-      it "user sees discussion before second comment" do
-        create_first_comment
-        view_discussion
-        create_second_comment
-        delete_first_comment
-        discussion_reader.unread_items_count.should == 1
+        reload_everything
+        expect(discussion.items_count - discussion_reader.read_items_count).to eq 1
       end
     end
   end
 end
-

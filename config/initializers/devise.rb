@@ -4,10 +4,11 @@ Devise.setup do |config|
   # ==> Mailer Configuration
   # Configure the e-mail address which will be shown in Devise::Mailer,
   # note that it will be overwritten if you use your own mailer class with default "from" parameter.
-  config.mailer_sender = ENV['SUPPORT_EMAIL']
+  # config.mailer_sender = ENV['SUPPORT_EMAIL']
 
   # Configure the class responsible to send e-mails.
   # config.mailer = "Devise::Mailer"
+  config.parent_mailer = "BaseMailer"
 
   # Automatically apply schema changes in tableless databases
 
@@ -124,7 +125,7 @@ Devise.setup do |config|
 
   # Email regex used to validate email formats.
   # config.email_regexp = /^[A-Z0-9'._%+-]+@[A-Z0-9.-]+\.[A-Z]+/i
-  config.email_regexp = /^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i
+  config.email_regexp = /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i
 
   # ==> Configuration for :timeoutable
   # The time you want to timeout the user session without activity. After this
@@ -200,15 +201,6 @@ Devise.setup do |config|
 
   # The default HTTP method used to sign out a resource. Default is :delete.
   config.sign_out_via = :delete
-
-  # ==> OmniAuth
-  # Add a new OmniAuth provider. Check the wiki for more information on setting
-  # up on your models and hooks.
-  # config.omniauth :github, 'APP_ID', 'APP_SECRET', :scope => 'user,public_repo'
-  config.omniauth 'google_oauth2', Rails.application.secrets.google_key, Rails.application.secrets.google_secret, name: 'google'
-  config.omniauth :facebook, Rails.application.secrets.facebook_key, Rails.application.secrets.facebook_secret
-  config.omniauth :browser_id
-  config.omniauth :twitter, Rails.application.secrets.twitter_key, Rails.application.secrets.twitter_secret
 
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or

@@ -1,83 +1,119 @@
-require_relative './run_commands'
+# DEPLOYING LOOMIO
+# To run a full deploy simply run
+# `rake deploy` or `rake deploy:heroku`
+#
+# This will push the current master branch to production.
+# You can change which remote you're pointing to by changing 'HEROKU_REMOTE' in your ENV, default is 'loomio-production'
+#
+# This deploy script is modular, meaning you can run any part of it individually.
+# The order of operations goes:
+#
+# rake deploy:bump_version    -- add a commit to master which bumps the current version
+# rake deploy:plugins:fetch   -- fetch plugins from the loomio_org plugins.yml
+# rake deploy:plugins:install -- install plugins so the correct files are built and deployed
+# rake deploy:commit          -- commit all non-repository code to a branch for pushing
+# rake deploy:push            -- push deploy branch to heroku
+# rake deploy:cleanup         -- run rake db:migrate on heroku, restart dynos, and notify clients of version update
 
-def bump_version_and_push_origin_master
-  puts "updating loomio-production version and committing to github..."
-  run_commands ['ruby script/bump_version patch',
-                'git add lib/version',
-                'git commit -m "bump version"',
-                'git push origin master']
-  Loomio::Version.reload
-end
+# Once per machine, you'll need to run a command to setup heroku
+# rake deploy:setup           -- login to heroku and ensure heroku remote is present
 
-def setup_heroku
-  puts "setup heroku"
-  run_commands ["sh script/heroku_login.sh $DEPLOY_EMAIL $DEPLOY_PASSWORD",                       # login to heroku
-                "echo \"Host heroku.com\n  StrictHostKeyChecking no\" > ~/.ssh/config"]           # don't prompt for confirmation of heroku.com host
-end
-
-def setup_git_remote(remote)
-  puts "setup git remote #{remote}"
-  run_commands ["git config user.email $DEPLOY_EMAIL && git config user.name $DEPLOY_NAME",       # setup git commit user
-                "git remote add #{remote} https://git.heroku.com/#{remote}.git"]                  # add https heroku remote
-
-end
-
-def build_and_push_branch(remote, branch)
-  puts "building assets and deploying to #{remote}/#{branch}..."
-  build_branch = "deploy-#{remote}-#{branch}-#{Time.now.to_i}"
-  run_commands ["git checkout #{branch}",                                                         # checkout branch
-                "git checkout -b #{build_branch}",                                                # cut a new deploy branch off of that branch
-                "rake plugins:acquire plugins:resolve_dependencies",                              # install plugins specified in plugins/plugins.yml
-                "rm -rf plugins/**/.git",                                                         # allow cloned plugins to be added to this repo
-                "git add plugins/**/**/*.rb plugins/**/*.rb -f",                                  # add plugins folder to commit
-                "cd angular && npm install && gulp compile && cd ../",                            # build the app via gulp
-                "cp -r public/client/development public/client/#{Loomio::Version.current}",       # version assets
-                "git add public/client/#{Loomio::Version.current} public/client/fonts -f",        # add assets to commit
-                "git commit -m 'Add compiled assets / plugin code'",                              # commit assets
-                "git push #{remote} #{build_branch}:master -f",                                   # DEPLOY!
-                "git checkout #{branch}",                                                         # switch back to original branch
-                "git branch -D #{build_branch}"]                                                  # delete production branch
-end
-
-def heroku_migrate_and_restart(remote)
-  puts "migrating and restarting heroku app #{remote}..."
-  run_commands ["ruby /usr/local/heroku/bin/heroku run rake db:migrate -a #{remote}",
-                "ruby /usr/local/heroku/bin/heroku restart -a #{remote}",
-                "ruby /usr/local/heroku/bin/heroku run rake loomio:notify_clients_of_update -a #{remote}"]
-end
-
-desc "Deploy to some git-remote and branch"
-task :deploy do
-  # usage script/deploy loomio-production master
-  # usage:
-  #   rake deploy:setup
-  #   rake deploy                          # bump version, deploy master to loomio-production, run any migrations
-  #
-  #   rake deploy remote-name branch-name  # build, deploy, migrate with alternate remote and branch.
-  #                                        # Eg: rake deploy loomio-clone master
-
-  remote = ARGV[1] || 'loomio-production'
-  branch = ARGV[2] || 'master'
-
-  (remote != 'loomio-production' || bump_version_and_push_origin_master) &&
-  build_and_push_branch(remote, branch) &&
-  heroku_migrate_and_restart(remote)
-
-  exit 0
+def deploy_steps
+  [
+    "deploy:bump_version",
+    "plugins:fetch[#{heroku_plugin_set}]",
+    "plugins:install[fetched]",
+    "client:build",
+    "deploy:commit",
+    "deploy:push",
+    "deploy:cleanup"
+  ].join(' ')
 end
 
 namespace :deploy do
-  task :with_setup do
-    remote = ARGV[1] || 'loomio-production'
-    branch = ARGV[2] || 'master'
+  desc "Setup heroku and github for deployment"
+  task :setup do
+    puts "Logging into heroku and setting up remote..."
+    run_commands(
+      "sh script/heroku_login.sh $DEPLOY_EMAIL $DEPLOY_PASSWORD",
+      "echo \"Host heroku.com\n  StrictHostKeyChecking no\" > ~/.ssh/config",
+      "git config user.email $DEPLOY_EMAIL && git config user.name $DEPLOY_NAME",
+      "git remote add #{remote} https://git.heroku.com/#{heroku_remote}.git")
+  end
 
-    setup_heroku
-    setup_git_remote(remote)
+  desc "Deploy to heroku"
+  task :heroku do
+    puts "Deploying to #{heroku_remote}..."
+    run_commands("bundle exec rake #{deploy_steps}")
+    at_exit { run_commands("git branch -D #{deploy_branch}") }
+  end
 
-    (remote != 'loomio-production' || bump_version_and_push_origin_master) &&
-    build_and_push_branch(remote, branch) &&
-    heroku_migrate_and_restart(remote)
+  desc "Bump version of repository if pushing to production"
+  task :bump_version do
+    puts "Bumping version from #{loomio_version}..."
+    run_commands(
+      "git checkout master",
+      "git reset --hard",
+      "ruby script/bump_version.rb patch",
+      "git add lib/version",
+      "git commit -m 'bump version to #{loomio_version}'",
+      "git push origin master")
+  end
 
-    exit 0
+  desc "Commits built assets to deployment branch"
+  task :commit do
+    puts "Committing assets to deployment branch..."
+    run_commands(
+      "git checkout -b #{deploy_branch}",
+      "rm -rf plugins/fetched/**/.git",
+      "find plugins/fetched -name '*.*' | xargs git add -f",
+      "find public/img/emojis -name '*.png' | xargs git add -f",
+      "git add -f plugins",
+      "git add public/client/#{loomio_version} -f",
+      "git add public/service-worker.js -f",
+      "git commit -m 'Add compiled assets / plugin code'",
+      "git checkout master")
+  end
+
+  desc "Push to heroku!"
+  task :push, [:remote,:branch,:id] do |t, args|
+    puts "Deploying #{deploy_branch} to heroku remote #{heroku_remote}"
+    run_commands("git push #{heroku_remote} #{deploy_branch}:master -f")
+  end
+
+  desc "Migrate heroku database and restart dynos"
+  task :cleanup do
+    puts "Migrating heroku..."
+    run_commands(
+      "#{heroku_cli} run rake db:migrate -a #{heroku_remote}")
+  end
+end
+
+task :deploy => :"deploy:heroku"
+
+def loomio_version
+  Loomio::Version.current
+end
+
+def deploy_branch
+  @deploy_branch ||= "deploy-#{Time.now.to_i}"
+end
+
+def heroku_cli
+  @heroku_cli ||= `which heroku`.chomp
+end
+
+def heroku_plugin_set
+  ENV.fetch('HEROKU_PLUGIN_SET', 'loomio_org')
+end
+
+def heroku_remote
+  ENV.fetch('HEROKU_REMOTE', 'loomio-production')
+end
+
+def run_commands(*commands)
+  Array(commands).compact.each do |command|
+    puts "\n-> #{command}"
+    return false unless system(command)
   end
 end

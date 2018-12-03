@@ -1,12 +1,11 @@
-development: &default
+production:
   adapter: postgresql
-  encoding: unicode
-  database: postgres
-  pool: 5
-  username: postgres
-  password:
-  host: db
+  pool: <%= ENV.fetch('DB_POOL', 10) %>
+  database: <%= ENV['RDS_DB_NAME'] %>
+  username: <%= ENV['RDS_USERNAME'] %>
+  password: <%= ENV['RDS_PASSWORD'] %>
+  host: <%= ENV['RDS_HOSTNAME'] %>
+  port: <%= ENV['RDS_PORT'] %>
 
 test:
-  <<: *default
-  database: myapp_test
+  adapter: nulldb

@@ -19,13 +19,6 @@ Loomio::Application.configure do
 
   config.eager_load = false
 
-  config.action_mailer.delivery_method = :test
-  config.action_mailer.default_url_options = {
-    host:    'localhost',
-    port:     3000,
-    protocol: ENV['FORCE_SSL'] ? 'https' : 'http'
-  }
-
   # Use SQL instead of Active Record's schema dumper when creating the test database.
   # This is necessary if your schema can't be completely dumped by the schema dumper,
   # like if you have constraints or database-specific column types
@@ -36,4 +29,8 @@ Loomio::Application.configure do
 
   config.action_mailer.raise_delivery_errors = true
   config.middleware.use RackSessionAccess::Middleware
+
+  # Turns off logging for test environment, 6% speed up for testsuit
+  config.logger = Logger.new(nil)
+  config.log_level = :fatal
 end

@@ -1,14 +1,22 @@
 class BaseMailer < ActionMailer::Base
-  include ApplicationHelper
-  include LocalesHelper
   include ERB::Util
   include ActionView::Helpers::TextHelper
   include EmailHelper
-  include Roadie::Rails::Automatic
+  include LocalesHelper
 
-  add_template_helper(ReadableUnguessableUrlsHelper)
+  helper :email
 
-  default :from => "Loomio <notifications@#{ENV['SMTP_DOMAIN']}>"
+  add_template_helper(PrettyUrlHelper)
+
+  cattr_accessor :disabled
+  def self.skip
+    self.disabled = true
+    yield
+    self.disabled = false
+  end
+
+  NOTIFICATIONS_EMAIL_ADDRESS = "notifications@#{ENV['SMTP_DOMAIN']}"
+  default :from => "\"#{AppConfig.theme[:site_name]}\" <#{NOTIFICATIONS_EMAIL_ADDRESS}>"
   before_action :utm_hash
 
   protected
@@ -16,24 +24,19 @@ class BaseMailer < ActionMailer::Base
     @utm_hash = { utm_medium: 'email', utm_source: action_name, utm_campaign: mailer_name }
   end
 
-  def roadie_options
-    super.merge(url_options: {host: ActionMailer::Base.default_url_options[:host]})
-  end
-
   def email_subject_prefix(group_name)
-    "[Loomio: #{group_name}]"
+    "[#{AppConfig.theme[:site_name]}: #{group_name}]"
   end
 
   def from_user_via_loomio(user)
-    "\"#{user.name} (Loomio)\" <notifications@#{ENV['SMTP_DOMAIN']}>"
+    "\"#{user.name} (#{AppConfig.theme[:site_name]})\" <#{NOTIFICATIONS_EMAIL_ADDRESS}>"
   end
 
   def send_single_mail(locale: , to:, subject_key:, subject_params: {}, **options)
-    I18n.with_locale(locale) { mail options.merge(to: to,
-                                                  subject: I18n.t(subject_key, subject_params)) }
-  end
-
-  def self.send_bulk_mail(to:)
-    to.each { |user| yield user if block_given? }
+    I18n.with_locale(first_supported_locale(locale)) do
+      mail options.merge(to: to, subject: I18n.t(subject_key, subject_params))
+    end unless self.class.disabled
+  rescue Net::SMTPSyntaxError, Net::SMTPFatalError => e
+    raise "SMTP error to: '#{to}' from: '#{options[:from]}' action: #{action_name} mailer: #{mailer_name} error: #{e}"
   end
 end

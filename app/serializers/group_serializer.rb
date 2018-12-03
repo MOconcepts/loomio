@@ -1,65 +1,67 @@
-class GroupSerializer < ActiveModel::Serializer
+class GroupSerializer < Simple::GroupSerializer
   embed :ids, include: true
+
+  def self.attributes_for_formal(*attrs)
+    attrs.each do |attr|
+      define_method attr, -> { object.send attr }
+      define_method :"include_#{attr}?", -> { object.type == "FormalGroup" }
+    end
+    attributes *attrs
+  end
+
   attributes :id,
-             :organisation_id,
              :cohort_id,
              :key,
+             :handle,
+             :type,
              :name,
              :full_name,
+             :description,
+             :logo_url_medium,
              :created_at,
              :creator_id,
-             :description,
              :members_can_add_members,
+             :members_can_announce,
              :members_can_create_subgroups,
              :members_can_start_discussions,
              :members_can_edit_discussions,
              :members_can_edit_comments,
              :members_can_raise_motions,
              :members_can_vote,
-             :motions_count,
+             :token,
+             :polls_count,
+             :closed_polls_count,
              :discussions_count,
              :public_discussions_count,
              :group_privacy,
-             :is_visible_to_parent_members,
-             :parent_members_can_see_discussions,
              :memberships_count,
-             :invitations_count,
-             :visible_to,
+             :pending_memberships_count,
              :membership_granted_upon,
              :discussion_privacy_options,
-             :logo_url_medium,
-             :cover_url_desktop,
              :has_discussions,
-             :has_multiple_admins,
-             :archived_at,
-             :has_custom_cover,
-             :subscription_kind,
-             :subscription_plan,
-             :subscription_payment_method,
-             :subscription_expires_at,
-             :is_subgroup_of_hidden_parent,
-             :show_legacy_trial_expired_modal
+             :admin_memberships_count,
+             :archived_at
 
-  has_one :parent, serializer: GroupSerializer, root: 'groups'
+  attributes_for_formal :cover_urls,
+                        :has_custom_cover,
+                        :experiences,
+                        :enable_experiments,
+                        :features,
+                        :open_discussions_count,
+                        :closed_discussions_count,
+                        :recent_activity_count,
+                        :is_subgroup_of_hidden_parent,
+                        :is_visible_to_parent_members,
+                        :parent_members_can_see_discussions
 
-  def show_legacy_trial_expired_modal
-    ENV['TRIAL_EXPIRED_GROUP_IDS'].to_s.split(' ').map(&:to_i).include? object.id
+  has_one :parent, serializer: GroupSerializer, root: :groups
+
+  def include_token?
+    Hash(scope)[:include_token]
   end
 
-  def subscription_kind
-    subscription.try(:kind)
-  end
-
-  def subscription_plan
-    subscription.try(:plan)
-  end
-
-  def subscription_payment_method
-    subscription.try(:payment_method)
-  end
-
-  def subscription_expires_at
-    subscription.try(:expires_at)
+  def cover_photo
+    @cover_photo ||= object.cover_photo
   end
 
   def logo_url_medium
@@ -67,34 +69,29 @@ class GroupSerializer < ActiveModel::Serializer
   end
 
   def include_logo_url_medium?
-    object.logo.present?
+    type == "FormalGroup" && object.logo.present?
   end
 
-  def cover_url_desktop
-    cover_photo.url(:desktop)
+  def cover_urls
+    {
+      small:      cover_photo.url(:desktop),
+      medium:     cover_photo.url(:largedesktop),
+      large:      cover_photo.url(:largedesktop),
+      extralarge: cover_photo.url(:largedesktop)
+    }
   end
 
   def has_custom_cover
     cover_photo.present?
   end
 
-  def has_discussions
-    object.discussions_count > 0
-  end
-
-  def has_multiple_admins
-    object.admin_memberships_count > 1
-  end
-
-  def subscription
-    @subscription ||= object.subscription
-  end
-
-  def cover_photo
-    @cover_photo ||= object.cover_photo
-  end
-
   def is_subgroup_of_hidden_parent
     object.is_subgroup_of_hidden_parent?
+  end
+
+  private
+
+  def has_discussions
+    object.discussions_count > 0
   end
 end

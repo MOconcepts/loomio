@@ -1,6 +1,12 @@
 lt:
+  poll:
+    export:
+      title: Antraštė
+      details: Išsamesnė Informacija
+      group_name: Grupės Pavadinimas
+      total: Iš viso
   email:
-    missed_yesterday:
+    catch_up:
       mark_as_read: Žymėti kaip skaitytą
   footer:
     about: Apie
@@ -8,11 +14,6 @@ lt:
     contact: Susisiekite
     help: Pagalba
     privacy: Privatumas
+    pricing: Kainynas
     public_groups: Viešos grupės
     terms: Nuostatos
-  start_group_form:
-    group_name: Grupės pavadinimas
-  contact_page:
-    contact_us: Susisiekti su mumis
-    labels:
-      email: Tavo el. pašto adresas

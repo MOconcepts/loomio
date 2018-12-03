@@ -1,10 +1,26 @@
 class Events::InvitationAccepted < Event
+  include Events::Notify::InApp
+  include Events::LiveUpdate
+
   def self.publish!(membership)
-    create(kind: "invitation_accepted",
-           eventable: membership).tap { |e| EventBus.broadcast('invitation_accepted_event', e, e.eventable.inviter) }
+    super membership, user: membership.user
   end
 
-  def membership
-    eventable
+  def notify_clients!
+    ActionCable.server.broadcast eventable.message_channel, action: :accepted
+  end
+
+  private
+
+  def notification_recipients
+    User.where(id: eventable.inviter_id)
+  end
+
+  def notification_actor
+    eventable&.user
+  end
+
+  def notification_url
+    polymorphic_url(eventable.target_model)
   end
 end

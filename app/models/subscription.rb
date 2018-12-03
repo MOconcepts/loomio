@@ -1,29 +1,41 @@
-class Subscription < ActiveRecord::Base
-  has_one :group
+class Subscription < ApplicationRecord
   validates :kind, presence: true
-  validates :group, presence: true
 
+  GOLD_NAMES =      %w(standard-loomio-plan standard-plan-yearly)
+  PRO_NAMES =       %w(pro-loomio-plan pro-plan-yearly)
+  PLUS_NAMES =      %w(plus-plan plus-plan-yearly)
+  PLAN_NAMES =      GOLD_NAMES + PRO_NAMES + PLUS_NAMES
+  PAYMENT_METHODS = ['chargify', 'manual', 'paypal', 'barter']
+  KINDS =           ['gift', 'paid']
 
-  # trial is what groups start off with. It gives them 30 days to evaluate loomio
-  # gift means that groups will see "gift mode" stuff asking for donations
-  # paid means they have paid us for a subscription.. either online or manually
-  validates_inclusion_of :kind, in: ['trial', 'gift', 'paid']
+  # gift means free
+  validates_inclusion_of :kind, in: KINDS
+  validates_inclusion_of :payment_method, in: PAYMENT_METHODS, allow_nil: true
 
-  validates_inclusion_of :payment_method, in: ['chargify', 'manual', 'paypal']
+  has_many :groups
+
+  belongs_to :owner, class_name: 'User'
 
   # plan is a text field to detail the subscription type further
   # plan could be manual
   #
   # current it indicates standard or plus plan
 
-  delegate :id, to: :group, prefix: true, allow_nil: true
-
-  def self.new_trial
-    self.new(kind: 'trial', expires_at: 30.days.from_now.to_date)
+  def is_paid?
+    self.kind.to_s == 'paid'
   end
 
-  def group_id=(id)
-    self.group = Group.find(id)
+  def level
+    if kind == 'paid'
+      if PRO_NAMES.include?(plan)
+        'pro'
+      elsif PLUS_NAMES.include?(plan)
+        'plus'
+      else
+        'gold'
+      end
+    else
+      'free'
+    end
   end
-
 end

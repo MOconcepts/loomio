@@ -7,24 +7,24 @@ describe User do
   }
 
   let(:user) { create(:user) }
-  let(:group) { create(:group) }
-  let(:restrictive_group) { create(:group, members_can_start_discussions: false) }
+  let(:group) { create(:formal_group) }
+  let(:restrictive_group) { create(:formal_group, members_can_start_discussions: false) }
   let(:admin) { create :user }
+  let(:new_user) { build(:user, password: "a_good_password", password_confirmation: "a_good_password") }
 
-  subject do
-    user = User.new
-    user.valid?
-    user
+  it "should accept a good password with a confirmation" do
+    expect(new_user.valid?).to eq true
   end
 
-  it "cannot have invalid avatar_kinds" do
-    user.avatar_kind = 'bad'
-    user.should have(1).errors_on(:avatar_kind)
+  it "should fail if password confirmation does not match" do
+    new_user.password_confirmation = 'not_the_same'
+    expect(new_user.valid?).to eq false
   end
 
   it "should require the password to be at least 8 characters long" do
-    user.password = 'PSWD'
-    user.should have(1).errors_on(:password)
+    new_user.password = 'PSWD'
+    new_user.password_confirmation = 'PSWD'
+    expect(new_user.valid?).to eq false
   end
 
   it "should only require the password to be valid when it's being updated" do
@@ -93,6 +93,22 @@ describe User do
     user.should have(0).errors_on(:email)
   end
 
+  it "email can be duplicated for non-email verified accounts" do
+    create(:user, email: 'example@example.com', email_verified: false)
+    user = build(:user, email: 'example@example.com', email_verified: false)
+    expect(user).to be_valid
+    user.email_verified = true
+    expect(user).to be_valid
+  end
+
+  it "email cannot be duplicated for email verified accounts" do
+    create(:user, email: 'example@example.com', email_verified: true)
+    user = build(:user, email: 'example@example.com', email_verified: false)
+    expect(user).to be_valid
+    user.email_verified = true
+    expect(user).to_not be_valid
+  end
+
   it "has many groups" do
     group.add_member!(user)
     user.groups.should include(group)
@@ -101,16 +117,6 @@ describe User do
   it "has many adminable_groups" do
     group.add_admin!(user)
     user.adminable_groups.should include(group)
-  end
-
-  it "has many groups that discussions can be started in" do
-    group.add_member!(user)
-    restrictive_group.add_member!(user)
-    restrictive_group.add_admin!(admin)
-
-    user.groups_discussions_can_be_started_in.should include(group)
-    user.groups_discussions_can_be_started_in.should_not include(restrictive_group)
-    admin.groups_discussions_can_be_started_in.should include(restrictive_group)
   end
 
   it "has many admin memberships" do
@@ -124,44 +130,6 @@ describe User do
     discussion.author = user
     discussion.save!
     user.authored_discussions.should include(discussion)
-  end
-
-  it "has authored motions" do
-    group.add_member!(user)
-    discussion = create :discussion, group: group
-    motion = FactoryGirl.create(:motion, discussion: discussion, author: user)
-    user.authored_motions.should include(motion)
-  end
-
-  describe "#voting_motions" do
-    it "returns motions that belong to user and are open" do
-      discussion = create :discussion, group: group
-      motion = FactoryGirl.create(:motion, author: user, discussion: discussion)
-      user.voting_motions.should include(motion)
-    end
-
-    it "should not return motions that belong to the group but are closed'" do
-      discussion = create :discussion, group: group
-      motion = FactoryGirl.create(:motion, author: user, discussion: discussion)
-      MotionService.close(motion)
-
-      user.voting_motions.should_not include(motion)
-    end
-  end
-
-  describe "closed_motions" do
-    it "returns motions that belong to the group and are closed" do
-      discussion = create :discussion, group: group
-      motion = FactoryGirl.create(:motion, author: user, discussion: discussion)
-      MotionService.close(motion)
-      user.closed_motions.should include(motion)
-    end
-
-    it "should not return motions that belong to the group but are closed" do
-      discussion = create :discussion, group: group
-      motion = FactoryGirl.create(:motion, author: user, discussion: discussion)
-      user.closed_motions.should_not include(motion)
-    end
   end
 
   describe "name" do
@@ -180,24 +148,22 @@ describe User do
     user.save
   end
 
-  describe "#using_initials?" do
-    it "returns true if user avatar_kind is 'initials'" do
-      user.avatar_kind = "initials"
-      expect(user.using_initials?).to be true
-    end
-    it "returns false if user avatar_kind is something else" do
-      user.avatar_kind = "uploaded"
-      expect(user.using_initials?).to be false
-    end
-  end
+  describe "experienced" do
 
-  describe "#has_uploaded_image?" do
-    it "returns true if user has uploaded an image" do
-      user.stub_chain(:uploaded_avatar, :url).and_return('/uploaded_avatars/medium/pants.png')
-      expect(user.has_uploaded_image?).to be true
+    it "can store user experiences" do
+      user.experienced!(:happiness)
+      expect(user.experiences['happiness']).to eq true
     end
-    it "returns false if user has not uploaded an image" do
-      expect(user.has_uploaded_image?).to be false
+
+    it "does not store other experiences" do
+      user.experienced!(:frustration)
+      expect(user.experiences['happiness']).to eq nil
+    end
+
+    it "can forget experiences" do
+      user.update(experiences: { happiness: true })
+      user.experienced!(:happiness, false)
+      expect(user.experiences['happiness']).to eq false
     end
   end
 
@@ -237,6 +203,13 @@ describe User do
       it "restores the user's memberships" do
         user.memberships.should include(@membership)
       end
+    end
+  end
+
+  describe 'find_by_email' do
+    it 'is case insensitive' do
+      user = create(:user, email: "bob@bob.com")
+      expect(User.find_by(email: "BOB@bob.com")).to eq user
     end
   end
 
@@ -289,20 +262,6 @@ describe User do
       user.name = "Wow this is quite long as a name"
       user.generate_username
       expect(user.username.length).to eq 18
-    end
-  end
-
-  describe "#in_same_group_as?(other_user)" do
-    it "returns true if user and other_user are in the same group" do
-      group.add_member!(user)
-      other_user = FactoryGirl.create :user
-      group.add_member!(other_user)
-      expect(user.in_same_group_as?(other_user)).to be true
-    end
-    it "returns false if user and other_user do not share any groups" do
-      group.add_member!(user)
-      other_user = FactoryGirl.create :user
-      expect(user.in_same_group_as?(other_user)).to be false
     end
   end
 end

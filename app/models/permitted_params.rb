@@ -1,9 +1,12 @@
 class PermittedParams < Struct.new(:params)
+  MODELS = %w(
+    user membership_request membership poll outcome
+    stance invitation group_request group discussion discussion_reader comment
+    contact_message user_deactivation_response announcement document
+    draft oauth_application group_identity contact_request reaction
+  )
 
-  %w[user vote subscription motion membership_request membership
-   invitation group_request group discussion discussion_reader comment
-   attachment contact_message theme user_deactivation_response network_membership_request
-   draft oauth_application].each do |kind|
+  MODELS.each do |kind|
     define_method(kind) do
       permitted_attributes = self.send("#{kind}_attributes")
       params.require(kind).permit(*permitted_attributes)
@@ -13,79 +16,94 @@ class PermittedParams < Struct.new(:params)
 
   alias :read_attribute_for_serialization :send
 
-  def theme_attributes
-    [:name, :style, :pages_logo, :app_logo]
-  end
-
   def user_attributes
     [:name, :avatar_kind, :email, :password, :password_confirmation, :current_password,
-     :remember_me, :uploaded_avatar, :username, :uses_markdown,
-     :time_zone, :selected_locale, :email_when_mentioned,
-     :email_missed_yesterday, :deactivation_response,
-     :email_when_proposal_closing_soon, :email_new_discussions_and_proposals, :email_on_participation,
-     {email_new_discussions_and_proposals_group_ids: []}]
+     :remember_me, :uploaded_avatar, :username, :short_bio, :location,
+     :time_zone, :selected_locale, :email_when_mentioned, :default_membership_volume,
+     :email_catch_up, :deactivation_response, :has_password, :has_token, :email_status,
+     :email_when_proposal_closing_soon, :email_new_discussions_and_proposals, :email_on_participation, :email_newsletter,
+     :legal_accepted, {email_new_discussions_and_proposals_group_ids: []}]
   end
 
-  def vote_attributes
-    [:position, :statement, :proposal_id, :motion_id]
+  def poll_attributes
+    [:title, :details, :poll_type, :discussion_id, :group_id, :closing_at, :anonymous,
+     :multiple_choice, :key, :anyone_can_participate, :notify_on_participate, :voter_can_add_options,
+     :custom_fields, {custom_fields: [:can_respond_maybe, :deanonymize_after_close, :dots_per_person, :max_score, :time_zone, :meeting_duration, :minimum_stance_choices, :pending_emails, {pending_emails: []}]},
+     :document_ids, {document_ids: []},
+     :poll_option_names, {poll_option_names: []}]
   end
 
-  def network_membership_request_attributes
-    [:group_id, :network_id, :message]
+  def stance_attributes
+    [:poll_id, :reason,
+     :visitor_attributes, {visitor_attributes: [:name, :email, :legal_accepted, :recaptcha]},
+     :stance_choices_attributes, {stance_choices_attributes: [:score, :poll_option_id]}]
   end
 
-  def subscription_attributes
-    [:position, :statement]
+  def stance_choice_attributes
+    [:score, :poll_option_id, :stance_id]
   end
 
-  def motion_attributes
-    [:name, :description, :discussion_id, :closing_at, :outcome]
+  def outcome_attributes
+    [:statement, :poll_id, :poll_option_id,
+     :document_ids, {document_ids: []},
+     :custom_fields, custom_fields: [:event_location, :event_summary, :event_description]]
   end
-  alias_method :proposal_attributes, :motion_attributes
 
   def membership_request_attributes
     [:name, :email, :introduction, :group_id]
   end
 
   def membership_attributes
-    [:volume]
+    [:title, :volume, :apply_to_all, :set_default]
   end
 
   def discussion_reader_attributes
-    [:discussion_id, :volume, :starred]
+    [:discussion_id, :volume]
   end
 
   def invitation_attributes
-    [:recipient_email, :recipient_name, :intent]
+    [:recipient_email, :recipient_name, :intent, :group_id]
   end
 
   def group_request_attributes
-    [:name, :admin_name, :admin_email, :description, :is_commercial]
+    [:name, :admin_name, :admin_email, :description]
   end
 
   def group_attributes
-    [:parent_id, :name, :visible_to, :group_privacy, :is_visible_to_public, :discussion_privacy_options,
-     :members_can_add_members, :members_can_edit_discussions, :members_can_edit_comments, :motions_can_be_edited,
-     :description, :next_steps_completed,
-     :is_visible_to_parent_members, :parent_members_can_see_discussions,
-     :membership_granted_upon, :cover_photo, :logo, :category_id, :is_commercial,
-     :members_can_raise_motions, :members_can_vote,  :members_can_start_discussions, :members_can_create_subgroups]
+    [:parent_id, :name, :group_privacy, :is_visible_to_public, :discussion_privacy_options,
+     :members_can_add_members, :members_can_announce, :members_can_edit_discussions, :members_can_edit_comments, :motions_can_be_edited,
+     :description, :is_visible_to_parent_members, :parent_members_can_see_discussions,
+     :membership_granted_upon, :cover_photo, :logo, :category_id, :members_can_raise_motions,
+     :members_can_vote,  :members_can_start_discussions, :members_can_create_subgroups,
+     :document_ids, {document_ids: []}, :features, {features: AppConfig.group_features.presence || {}}
+   ]
+  end
+
+  def announcement_attributes
+    [:kind, :recipients, recipients: [{user_ids: []}, {emails: []}]]
+  end
+
+  def group_identity_attributes
+    [:group_id, :identity_type, :make_announcement, :custom_fields, custom_fields: [:slack_channel_name, :slack_channel_id]]
   end
 
   def discussion_attributes
-    [:title, :description, :uses_markdown, :group_id, :private, :iframe_src, :starred]
+    [:title, :description, :group_id, :private,
+     :forked_event_ids, {forked_event_ids: []},
+     :document_ids, {document_ids: []}
+    ]
   end
 
   def comment_attributes
-    [:body, :new_attachment_ids, :uses_markdown, :discussion_id, :parent_id, {new_attachment_ids: []}]
+    [:body, :discussion_id, :parent_id, :document_ids, {document_ids: []}]
   end
 
-  def attachment_attributes
-    [:file, :filename, :location, :filesize, :redirect]
+  def reaction_attributes
+    [:reaction, :reactable_id, :reactable_type]
   end
 
   def contact_message_attributes
-    [:email, :message, :name, :destination]
+    [:email, :subject, :user_id, :message, :name]
   end
 
   def user_deactivation_response_attributes
@@ -98,5 +116,13 @@ class PermittedParams < Struct.new(:params)
 
   def oauth_application_attributes
     [:name, :redirect_uri, :logo]
+  end
+
+  def contact_request_attributes
+    [:recipient_id, :message]
+  end
+
+  def document_attributes
+    [:url, :title, :model_id, :model_type, :file, :filename]
   end
 end

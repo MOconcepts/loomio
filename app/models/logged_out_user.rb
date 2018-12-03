@@ -1,55 +1,46 @@
 class LoggedOutUser
+  include Null::User
   include AvatarInitials
-  attr_accessor :name, :email, :avatar_initials
+  attr_accessor :name, :email, :token, :membership_token, :avatar_initials, :locale, :legal_accepted, :recaptcha
+
   alias :read_attribute_for_serialization :send
 
-  def initialize(name: nil, email: nil)
+  def initialize(name: nil, email: nil, token: nil, membership_token: nil, locale: I18n.locale)
     @name = name
     @email = email
+    @token = token
+    @membership_token = membership_token
+    @locale = locale
+    apply_null_methods!
     set_avatar_initials if (@name || @email)
   end
 
-  NIL_METHODS   = [:id, :key, :username, :avatar_url, :selected_locale, :deactivated_at, :time_zone]
-  FALSE_METHODS = [:is_logged_in?, :uses_markdown?, :is_organisation_coordinator?, :belongs_to_manual_subscription_group?,
-                   :email_when_proposal_closing_soon, :email_missed_yesterday, :email_when_mentioned, :email_on_participation]
-  EMPTY_METHODS = [:groups, :group_ids, :adminable_group_ids]
-  TRUE_METHODS  = [:is_logged_out?, :angular_ui_enabled, :angular_ui_enabled?]
-
-  NIL_METHODS.each   { |method| define_method(method, -> { nil }) }
-  FALSE_METHODS.each { |method| define_method(method, -> { false }) }
-  EMPTY_METHODS.each { |method| define_method(method, -> { [] }) }
-  TRUE_METHODS.each  { |method| define_method(method, -> { true }) }
-
-  def votes
-    Vote.none
+  def create_user
+    User.create(name: name,
+                email: email,
+                token: token,
+                legal_accepted: legal_accepted,
+                require_valid_signup: true,
+                recaptcha: recaptcha)
   end
 
-  def memberships
-    Membership.none
+  def nil_methods
+    super + [:id, :created_at, :avatar_url, :presence, :restricted, :persisted?]
   end
 
-  def locale
-    I18n.default_locale
+  def false_methods
+    super + [:save, :persisted?]
   end
 
-  def avatar_url(size)
-    nil
+  def errors
+    ActiveModel::Errors.new self
+  end
+
+  def email_status
+    User.email_status_for(self.email)
   end
 
   def avatar_kind
     'initials'
   end
-
-  def is_member_of?(group)
-    false
-  end
-
-  def can?(*args)
-    false
-  end
-
-  def ability
-    @ability ||= Ability.new(self)
-  end
-
 end

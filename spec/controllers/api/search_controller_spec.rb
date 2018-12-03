@@ -2,9 +2,8 @@ require 'rails_helper'
 describe API::SearchController do
 
   let(:user)    { create :user }
-  let(:group)   { create :group }
+  let(:group)   { create :formal_group }
   let(:discussion) { create :discussion, group: group }
-  let(:motion) { create :current_motion, discussion: discussion }
   let(:comment) { create :comment, discussion: discussion }
 
   describe 'index' do
@@ -27,26 +26,24 @@ describe API::SearchController do
       expect(@ranks).to include SearchVector::WEIGHT_VALUES[3]
     end
 
+    # TODO: Pull this stuff out so it's not so magic number-y
+    it "decays relevance for older posts" do
+      DiscussionService.update discussion: discussion, params: { title: 'find me' }, actor: user
+      discussion.update(last_activity_at: 10.days.ago)
+      result = search_for('find')
+      expect(@ranks).to include SearchVector::WEIGHT_VALUES[3] * 0.8
+
+      discussion.update(last_activity_at: 30.days.ago)
+      result = search_for('find')
+      expect(@ranks).to include SearchVector::WEIGHT_VALUES[3] * 0.5
+
+      discussion.update(last_activity_at: 60.days.ago)
+      result = search_for('find')
+      expect(@ranks).to include SearchVector::WEIGHT_VALUES[3] * 0.1
+    end
+
     it "can find a discussion by description" do
       DiscussionService.update discussion: discussion, params: { description: 'find me' }, actor: user
-      search_for('find')
-
-      expect(@result_keys).to include discussion.key
-      expect(@ranks).to include SearchVector::WEIGHT_VALUES[1]
-    end
-
-    it "can find a discussion by proposal name" do
-      motion.update name: 'find me'
-      SearchVector.index! motion.discussion_id
-      search_for('find')
-
-      expect(@result_keys).to include discussion.key
-      expect(@ranks).to include SearchVector::WEIGHT_VALUES[2]
-    end
-
-    it "can find a discussion by proposal description" do
-      motion.update description: 'find me'
-      SearchVector.index! motion.discussion_id
       search_for('find')
 
       expect(@result_keys).to include discussion.key
@@ -62,7 +59,7 @@ describe API::SearchController do
     end
 
     it "does not display content the user does not have access to" do
-      DiscussionService.update discussion: discussion, params: { group: create(:group) }, actor: user
+      DiscussionService.update discussion: discussion, params: { group: create(:formal_group) }, actor: user
       search_for('find')
 
       expect(@result_keys).to_not include discussion.key
@@ -76,10 +73,10 @@ def fields_for(json, name, field)
 end
 
 def search_for(term)
-  get :index, q: term, format: :json
+  get :index, params: { q: term }, format: :json
   JSON.parse(response.body).tap do |json|
     expect(json.keys).to include *(%w[search_results])
     @result_keys = fields_for(json, 'search_results', 'key')
-    @ranks      = fields_for(json, 'search_results', 'rank').map(&:to_f)
+    @ranks      = fields_for(json, 'search_results', 'rank').map { |d| d.to_f.round(2) }
   end
 end

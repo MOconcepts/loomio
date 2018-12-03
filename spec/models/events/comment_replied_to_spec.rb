@@ -16,8 +16,7 @@ describe Events::CommentRepliedTo do
     end
 
     it 'emails the parent author' do
-      expect(ThreadMailer).to receive(:delay).and_return(double(comment_replied_to: true))
-      expect { Events::CommentRepliedTo.publish!(comment) }.to change { Event.count }.by(1)
+      expect { Events::CommentRepliedTo.publish!(comment) }.to change { ActionMailer::Base.deliveries.count }.by(1)
     end
 
     it 'creates a notification' do
@@ -27,7 +26,7 @@ describe Events::CommentRepliedTo do
     it 'does not email when the comment and reply author are the same' do
       parent.update author: comment.author
       expect(Event).to_not receive(:create!)
-      expect(ThreadMailer).to_not receive(:delay)
+      expect(DiscussionMailer).to_not receive(:delay)
       expect { Events::CommentRepliedTo.publish!(comment) }.to_not change { Notification.count }
     end
   end

@@ -1,28 +1,66 @@
-Rack::Attack.cache.store = Rails.cache
-Rack::Attack.throttled_response = ->(env) { [429, {}, [ActionView::Base.new.render(file: 'public/429.html')]] }
+if ENV['USE_RACK_ATTACK']
+  class Rack::Attack
+    # considerations
+    # multiple users could be using same ip address (eg coworking space)
+    # does not distinguish between valid and invalid requests (eg: form validation)
+    # - so we need to allow for errors and resubmits without interruption.
+    # our attackers seem to create a group every 1 or 2 minutes, each with max invitations.
+    # so we're mostly interested in the hour and day limits
 
-ActiveSupport::Notifications.subscribe('rack.attack') do |name, start, finish, request_id, req|
-  Airbrake.notify Exception.new(message: "#{req.ip} has been rate limited for url #{req.url}", data: [name, start, finish, request_id, req])
-end
+    # group creation and invitation sending is the most common attack we see
+    # usually we get a few new groups per hour, globally.
+    # when attacks happen we see a few groups per minute, usually with the same name
+    # each trying to invite max_invitations with bulk create.
 
-@config = YAML.load_file("#{Rails.root}/config/rack_attack.yml").with_indifferent_access
+    # throttles all posts to the above endponts
+    # so we're looking at a record creation attack.
+    # the objective of these rules is not to guess what normal behaviour looks like
+    # and pitch abouve that.. but to identify what abusive behaviour certainly is,
+    # and ensure it cannot get really really bad.
 
-def from_config(key, field)
-   @config[key][field] || @config[:default][field]
-end
+    RATE_LIMITS = [
+      {
+        name: :heavy,
+        endpoints: [
+          'groups',
+          'invitations/bulk_create'
+        ],
+        limits: {
+          10 => 1.hour,
+          20 => 1.day
+        }
+      }, {
+        name: :medium,
+        endpoints: [
+          'login_tokens',
+          'invitations',
+          'discussions',
+          'polls',
+          'stances',
+          'comments',
+          'reactions',
+          'documents',
+          'registrations',
+          'contact_messages'
+        ],
+        limits:   {
+          100   => 5.minutes,
+          1000  => 1.hour,
+          10000 => 1.day
+        }
+      }
+    ].freeze
 
-def throttle_request?(key, req)
-  production_or_testing_throttling? &&
-  from_config(key, :method) == req.env['REQUEST_METHOD'] &&
-  /#{from_config(key, :path)}/.match(req.path.to_s)
-end
+    RATE_LIMITS.each do |limit_set|
+      limit_set[:limits].each do |limit, period|
+        throttle(limit_set[:name], limit: limit, period: period) do |req|
+          req.ip if should_limit?(req, limit_set[:endpoints])
+        end
+      end
+    end
 
-def production_or_testing_throttling?
-  Rails.env.production? || ENV['TESTING_RATE_LIMIT'] == '1'
-end
-
-@config.keys.each do |key|
-  Rack::Attack.throttle key, limit: from_config(key, :limit), period: from_config(key, :period) do |req|
-    req.ip if throttle_request? key, req
-  end unless key == 'default'
+    def self.should_limit?(req, endpoints)
+      req.post? && endpoints.any? { |r| req.path.starts_with?("/api/v1/#{r}") }
+    end
+  end
 end
